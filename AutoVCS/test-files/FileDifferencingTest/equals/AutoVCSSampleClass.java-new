@@ -1,0 +1,8 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+	
+	public boolean equals(Object another){
+	    return false;
+	}
+}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>View Contribution Summaries</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+	crossorigin="anonymous" />
+<style>
+.top15 {
+	margin-top: 15px;
+}
+</style>
+<script src="https://kit.fontawesome.com/8b14d54041.js"
+	crossorigin="anonymous"></script>
+</head>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+	integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+	crossorigin="anonymous"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+	integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+	crossorigin="anonymous"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+	crossorigin="anonymous"></script>
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<body>
+
+	<div layout:fragment="content">
+
+		<script>
+			/*<![CDATA[*/
+			var app = angular.module('myApp', []);
+			app
+					.controller(
+							'contributionSummaries',
+							function($scope, $http, $q) {
+
+								$scope.submit = {};
+
+								$scope.dispError = false;
+								$scope.displayContribs = false;
+
+								$scope.formatDate = function(date) {
+									/* date.epochSecond is seconds, convert this to milliseconds -- ignoring nanoseconds is fine */
+									return (new Date(date.epochSecond * 1000)).toLocaleString();
+								}
+
+								$scope.format = function(value) {
+									if (value < 1)
+										return "<1";
+									return value.toFixed(2);
+								}
+
+								$scope.fetch = function() {
+
+									if ($scope.filterByDate) {
+										$scope.submit.startDate = $scope.startDate.toISOString();
+										$scope.submit.endDate = $scope.endDate.toISOString();
+									}
+
+									else {
+										$scope.submit.startDate = undefined;
+										$scope.submit.endDate = undefined;
+									}
+
+									$scope.dispError = false;
+									$scope.displayContribs = false;
+									$scope.submit.type = "BY_USER";
+									$http
+											.post("/api/v1/contributions/",
+													$scope.submit)
+											.then(
+													function(response) {
+														$scope.allContributions = response.data;
+														$scope.displayContribs = true;
+													},
+													function(error) {
+														$scope.errorMessage = error.data.message;
+														$scope.dispError = true;
+													});
+								}
+
+							});
+			/*]]>*/
+		</script>
+
+		<div ng-app="myApp" ng-controller="contributionSummaries">
+			<div class="container">
+
+				<h1>View Contribution Summaries</h1>
+
+				<div class="row">
+					<div class="col-sm">
+
+						Enter the Github organisation (or individual username) for the
+						desired repository. <br /> <input type="text"
+							ng-model="submit.organisation" required="true" />
+
+					</div>
+					<div class="col-sm">
+						Enter the name of the repository to analyse contributions in. <br />
+						<input type="text" ng-model="submit.repository" required="true" />
+
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="submit.initialiseUnknown">Initialise
+						repository metadata, if necessary?</input>
+					</div>
+
+
+				</div>
+				<div class="row top15"></div>
+
+				<div class="row">
+					<h5>Additional (optional) settings</h5>
+				</div>
+
+				<div class="row top15"></div>
+
+				<div class="row">
+					<div class="col-sm">
+						<input type="checkbox" ng-model="filterByDate">&nbsp;Filter
+						by date?</input>
+					</div>
+
+					<div ng-show="filterByDate">
+						<div class="col-sm">
+							Select the start date: <br /> <input type="datetime-local"
+								ng-model="startDate" />
+						</div>
+
+						<div class="col-sm">
+							Select the end date: <br /> <input type="datetime-local"
+								ng-model="endDate" />
+						</div>
+
+
+					</div>
+
+				</div>
+
+				<div class="row">
+					<div class="col-sm">
+						<input type="checkbox" ng-model="submit.excludeGUI">&nbsp;Exclude
+						GUI files?</input>
+					</div>
+				</div>
+
+				<div class="row">
+					<p style="color: red">Anything above this line requires a
+						recompute on the server</p>
+				</div>
+
+				<div class="row top15"></div>
+
+
+				<div class="row">
+					<div class="col-sm">
+						<input type="submit"
+							value="Compute Contribution Data (warning -- this may take a moment!)"
+							ng-click="fetch()" />
+					</div>
+				</div>
+
+				<div class="row top15"></div>
+
+				<div class="row">
+					<p style="color: green">Anything below this line can be changed
+						on the fly</p>
+				</div>
+
+				<div class="row">
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="score">&nbsp;Display one
+						contributions score for each user?</input>
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="summaries">&nbsp;Display
+						summaries for each user?</input>
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="details">&nbsp;Display
+						details for each user?</input>
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="commits">&nbsp;Display
+						commits for each user?</input>
+					</div>
+
+				</div>
+
+
+				<div class="top15" id="commits" ng-show="displayContribs">
+					<h3>Contributions Data</h3>
+					<div class="row top15"
+						ng-repeat="(commitOrUser, contributions) in allContributions track by $index">
+
+
+						<div class="top15">
+
+							<div ng-show="score">
+								<strong>{{commitOrUser}} -- Contribution Score:
+									{{contributions.contributionsScore}}</strong>
+							</div>
+							<div ng-show="score">
+								<i>Percentage contribution to team:
+									{{format(contributions.contributionsScorePercent)}}%</i>
+							</div>
+
+
+							<div ng-hide="score">
+								<strong>{{commitOrUser}}</strong>
+							</div>
+
+
+
+							<div class="col-sm" ng-show="summaries"
+								ng-repeat="(contribution, count) in contributions.binnedChangesCounts track by $index">
+								{{contribution}} -- {{count}} time(s)</div>
+
+
+
+							<div class="col-sm" ng-show="commits">
+								<strong>Commits</strong>
+								<div ng-repeat="commit in contributions.commits track by $index">
+
+									<div ng-show="$index === 0">
+										<strong><code>{{commit.commitMessage}}</code>
+											({{formatDate(commit.date)}}) <a href="{{commit.url}}"
+											target="_blank"><i
+												class="fas fa-external-link-square-alt"></i></a></strong>
+									</div>
+
+
+									<div ng-show="$index != 0">
+										<code>{{commit.commitMessage}}</code>
+										({{formatDate(commit.date)}}) <a href="{{commit.url}}"
+											target="_blank"><i
+											class="fas fa-external-link-square-alt"></i></a>
+									</div>
+
+								</div>
+							</div>
+
+
+
+							<div class="col-sm" ng-show="details">
+								<strong>Detailed Changes</strong>
+								<div
+									ng-repeat="changedFile in contributions.changes track by $index">
+
+									<div ng-show="changedFile.score != 0">
+										Changes to
+										<code>{{changedFile.fileName}}</code>
+										<div
+											ng-repeat="(changesInFile,countInFile) in changedFile.binnedChangesCounts track by $index">
+											&nbsp;&nbsp;{{changesInFile}} -- {{countInFile}} time(s)</div>
+									</div>
+
+
+								</div>
+
+							</div>
+
+						</div>
+					</div>
+
+				</div>
+
+
+				<div ng-show="dispError" class="row top15">
+					<p style="color: red">{{errorMessage}}</p>
+				</div>
+
+				<a href="/index">Home</a>
+			</div>
+
+
+
+
+		</div>
+
+	</div>
+</body>
+</html>

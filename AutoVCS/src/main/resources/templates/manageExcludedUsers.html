@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Manage Excluded Users</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+	crossorigin="anonymous" />
+
+<link rel="stylesheet"
+	href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+
+<style>
+.top15 {
+	margin-top: 15px;
+}
+
+.top25 {
+	margin-top: 25px;
+}
+
+.panel-default>.panel-heading-3 {
+	background-color: #d9d9d9;
+	border-color: #d9d9d9;
+	font-weight: 300;
+}
+</style>
+<script src="https://kit.fontawesome.com/8b14d54041.js"
+	crossorigin="anonymous"></script>
+</head>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+	integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+	crossorigin="anonymous"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+	integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+	crossorigin="anonymous"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+	crossorigin="anonymous"></script>
+
+
+<body>
+	<div layout:fragment="content">
+
+		<script>
+			/*<![CDATA[*/
+			var app = angular.module('myApp', []);
+			app
+					.controller(
+							'excludedUsersCtrl',
+							function($scope, $http, $q) {
+
+								$scope.expandButtonName = "expand_more";
+								$scope.expandStatusName = false;
+								$scope.expandButtonList = "expand_more";
+								$scope.expandStatusList = false;
+								$scope.expandButtonExcluded = "expand_more";
+								$scope.expandStatusExcluded = false;
+								$scope.expandButtonCreate = "expand_more";
+								$scope.expandStatusCreate = false;
+
+								$scope.loadData = function() {
+									$scope.getUsers();
+									$scope.getExcludedUsers();
+								}
+
+								$scope.excludeType = "name";
+
+								$scope.getUsers = function() {
+									$http.get("/api/v1/users/").then(
+											function(response) {
+												$scope.users = response.data;
+											});
+								}
+
+								$scope.getExcludedUsers = function() {
+									$http
+											.get("/api/v1/users/excluded")
+											.then(
+													function(response) {
+														$scope.excludedUsers = response.data;
+													});
+								}
+
+								$scope.excludeUsers = function() {
+									$http
+											.post(
+													'/api/v1/users/'
+															+ $scope.excludeNameOrEmail
+															+ "/"
+															+ $scope.excludeType
+															+ "/exclude")
+											.then(
+													function(response) {
+														$scope.getUsers();
+														$scope
+																.getExcludedUsers();
+													},
+													function(error) {
+														console
+																.log("Error occurred excluding users");
+													})
+								}
+
+								$scope.fetchWillExclude = function() {
+
+									if ($scope.excludeNameOrEmail === "") {
+										$scope.willExclude = [];
+									}
+
+									else
+										$http
+												.get(
+														'/api/v1/users/'
+																+ $scope.excludeNameOrEmail
+																+ "/"
+																+ $scope.excludeType
+																+ "/exclude")
+												.then(
+														function(response) {
+															$scope.willExclude = response.data;
+														});
+
+								}
+
+								$scope.createUser = function() {
+									$scope.newUser.excluded = true;
+									$http
+											.post('/api/v1/users/',
+													$scope.newUser)
+											.then(
+													function(response) {
+														$scope.loadData();
+														$scope.newUser.name = "";
+														$scope.newUser.email = "";
+
+													},
+													function(error) {
+														console
+																.log("Error occurred creating new user");
+													})
+
+								}
+
+								$scope.includeUser = function(user) {
+									$http
+											.post(
+													`/api/v1/users/${user.id}/include`)
+											.then(
+													function(response) {
+														$scope.loadData();
+													},
+													function(error) {
+														console
+																.log("Error including "
+																		+ JSON
+																				.stringify(user));
+													});
+
+								}
+
+								$scope.excludeUser = function(user) {
+									$http
+											.post(
+													`/api/v1/users/${user.id}/exclude`)
+											.then(
+													function(response) {
+														$scope.loadData();
+													},
+													function(error) {
+														console
+																.log("Error excluding "
+																		+ JSON
+																				.stringify(user));
+													});
+								}
+
+								$scope.expandName = function() {
+									if ($scope.expandButtonName === "expand_more") {
+										$scope.expandButtonName = "expand_less";
+										$scope.expandStatusName = true;
+									} else {
+										$scope.expandButtonName = "expand_more";
+										$scope.expandStatusName = false;
+									}
+								}
+
+								$scope.expandList = function() {
+									if ($scope.expandButtonList === "expand_more") {
+										$scope.expandButtonList = "expand_less";
+										$scope.expandStatusList = true;
+									} else {
+										$scope.expandButtonList = "expand_more";
+										$scope.expandStatusList = false;
+									}
+								}
+
+								$scope.expandExcluded = function() {
+									if ($scope.expandButtonExcluded === "expand_more") {
+										$scope.expandButtonExcluded = "expand_less";
+										$scope.expandStatusExcluded = true;
+									} else {
+										$scope.expandButtonExcluded = "expand_more";
+										$scope.expandStatusExcluded = false;
+									}
+								}
+
+								$scope.expandCreate = function() {
+									if ($scope.expandButtonCreate === "expand_more") {
+										$scope.expandButtonCreate = "expand_less";
+										$scope.expandStatusCreate = true;
+									} else {
+										$scope.expandButtonCreate = "expand_more";
+										$scope.expandStatusCreate = false;
+									}
+								}
+
+								$scope.loadData();
+
+							});
+			/*]]>*/
+		</script>
+
+		<div ng-app="myApp" ng-controller="excludedUsersCtrl">
+
+			<div class="container">
+				<div class="panel panel-default" style="margin-top: 20px">
+					<div class="panel-heading" style="height: 70px">
+						<div class="panel-title"
+							style="font-size: 20px; font-weight: 500; margin-top: 10px">Manage
+							Excluded Users</div>
+					</div>
+					<div class="panel-body">
+						<div class="row" style="margin-top: 15px; margin-left: 0px;">
+							<div class="col-md-8" style="margin-right: 15px">
+								<div class="row top25">
+									<div class="panel panel-default">
+										<div class="panel-heading-3 panel-heading">
+											<span class="panel-title">Include or Exclude Users
+												From List</span>
+											<button class="btn btn-xs"
+												style="font-size: 1rem; position: absolute; right: 8px; color: #2b2b2b"
+												ng-click="expandList()">
+												<i class="material-icons">{{expandButtonList}}</i>
+											</button>
+										</div>
+										<div class="panel-body-3 panel-body"
+											ng-show="expandStatusList">
+
+											<table class="table table-bordered">
+
+												<thead>
+													<tr>
+														<th>Name</th>
+														<th>Email Address</th>
+														<th>Action</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr name="usersTableRow" ng-repeat="u in users">
+														<td name="nameCell">{{u.name}}</td>
+														<td name="codeCell">{{u.email}}</td>
+														<td>
+															<div class="row text-center">
+																<div class="col-md-6" ng-if="u.excluded">
+																	<input type="button" value="Include"
+																		class="btn btn-primary" name="includeUser"
+																		ng-click="includeUser(u)" />
+																</div>
+																<div class="col-md-6" ng-if="!u.excluded">
+																	<input type="button" value="Exclude"
+																		class="btn btn-warning" name="excludeUser"
+																		ng-click="excludeUser(u)" />
+																</div>
+															</div>
+														</td>
+
+													</tr>
+												</tbody>
+											</table>
+
+										</div>
+
+									</div>
+								</div>
+
+								<div class="row top25">
+									<div class="panel panel-default">
+										<div class="panel-heading-3 panel-heading">
+											<span class="panel-title">Exclude Users by Name or
+												Email</span>
+											<button class="btn btn-xs"
+												style="font-size: 1rem; position: absolute; right: 8px; color: #2b2b2b"
+												ng-click="expandName()">
+												<i class="material-icons">{{expandButtonName}}</i>
+											</button>
+										</div>
+										<div class="panel-body-3 panel-body"
+											ng-show="expandStatusName">
+
+											<div style="margin: 15px">
+												<div class="form-group">
+													<label for="comments">Enter name or email address
+														to exclude:</label> <input id="comments" class="form-control"
+														ng-model="excludeNameOrEmail" name="comments" type="text"
+														ng-change="fetchWillExclude()" />
+												</div>
+											</div>
+
+											<div>
+												Please select whether you want to match against a user's
+												name, email address, or both: <br /> <label> <input
+													type="radio" ng-model="excludeType" value="name"
+													ng-change="fetchWillExclude()" /> Name
+												</label><br /> <label> <input type="radio"
+													ng-model="excludeType" ng-value="email"
+													ng-change="fetchWillExclude()" /> Email Address
+												</label><br /> <label> <input type="radio"
+													ng-model="excludeType" value="both"
+													ng-change="fetchWillExclude()" /> Both Name and Email
+													Address
+												</label><br />
+
+											</div>
+
+											This will exclude:
+
+											<table class="table table-bordered">
+
+												<thead>
+													<tr>
+														<th>Name</th>
+														<th>Email Address</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr name="usersTableRow" ng-repeat="u in willExclude">
+														<td name="nameCell">{{u.name}}</td>
+														<td name="codeCell">{{u.email}}</td>
+
+													</tr>
+												</tbody>
+											</table>
+
+											<div>
+												<input type="button" value="Go!" class="btn btn-warning"
+													name="excludeUsers" ng-click="excludeUsers()" />
+											</div>
+										</div>
+
+									</div>
+								</div>
+
+								<div class="row top25">
+									<div class="panel panel-default">
+										<div class="panel-heading-3 panel-heading">
+											<span class="panel-title">View Excluded Users</span>
+											<button class="btn btn-xs"
+												style="font-size: 1rem; position: absolute; right: 8px; color: #2b2b2b"
+												ng-click="expandExcluded()">
+												<i class="material-icons">{{expandButtonExcluded}}</i>
+											</button>
+										</div>
+										<div class="panel-body-3 panel-body"
+											ng-show="expandStatusExcluded">
+
+											The following users are already excluded from displays:
+
+											<table class="table table-bordered">
+
+												<thead>
+													<tr>
+														<th>Name</th>
+														<th>Email Address</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr name="usersTableRow" ng-repeat="u in excludedUsers">
+														<td name="nameCell">{{u.name}}</td>
+														<td name="codeCell">{{u.email}}</td>
+
+													</tr>
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+
+								<div class="row top25">
+									<div class="panel panel-default">
+										<div class="panel-heading-3 panel-heading">
+											<span class="panel-title">Create New Excluded User</span>
+											<button class="btn btn-xs"
+												style="font-size: 1rem; position: absolute; right: 8px; color: #2b2b2b"
+												ng-click="expandCreate()">
+												<i class="material-icons">{{expandButtonCreate}}</i>
+											</button>
+										</div>
+										<div class="panel-body-3 panel-body"
+											ng-show="expandStatusCreate">
+
+											Create a new User, and mark them as Excluded. This is <strong>highly
+												encouraged</strong> if you are going to use the "Check for Duplicate
+											Members" option when populating repositories, as otherwise
+											the member(s) of the teaching staff who created or populated
+											the repositories will show up as duplicate for every team.
+
+
+
+
+											<div style="margin: 15px">
+												<div class="form-group">
+													<label for="comments">Enter name:</label> <input
+														id="newUserName" class="form-control"
+														ng-model="newUser.name" name="newUserName" type="text" />
+													<br /> <label for="comments">Enter email address:</label>
+													<input id="newUserEmail" class="form-control"
+														ng-model="newUser.email" name="newUserEmail" type="text" />
+												</div>
+
+												<div class="col-md-6">
+													<input type="button" value="Create New User"
+														class="btn btn-primary" name="createUser"
+														ng-click="createUser()" />
+												</div>
+											</div>
+
+										</div>
+									</div>
+								</div>
+
+
+
+
+
+							</div>
+
+
+						</div>
+					</div>
+				</div>
+				<a href="/index">Home</a>
+			</div>
+
+
+		</div>
+
+	</div>
+</body>
+</html>

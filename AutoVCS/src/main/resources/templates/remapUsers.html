@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Remap Users</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+	crossorigin="anonymous" />
+<style>
+.top15 {
+	margin-top: 15px;
+}
+</style>
+</head>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+	integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+	crossorigin="anonymous"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+	integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+	crossorigin="anonymous"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+	crossorigin="anonymous"></script>
+
+<body>
+	<h1>Remap Users</h1>
+	<div layout:fragment="content">
+
+		<script>
+			/*<![CDATA[*/
+			var app = angular.module('myApp', []);
+			app
+					.controller(
+							'commitsChartsCtrl',
+							function($scope, $http, $q) {
+
+								$scope.retrieveRepos = function() {
+									$http.get("/api/v1/repositoryData").then(
+											function(response) {
+												$scope.repos = response.data;
+
+											});
+								}
+
+								$scope.retrieveRepos();
+								
+								$scope.newUsers = {};
+
+								$scope.submitUpdates = function() {
+									console.log($scope);
+									
+									$http.post("/api/v1/users/remap", $scope.newUsers).then(function(response){
+										
+									}, function (error){
+										
+									});
+
+								}
+
+								$scope.loadRepo = function() {
+
+									$scope.repoSelected = true;
+
+									let organisation = $scope.selectedRepo.organisation;
+									let repository = $scope.selectedRepo.name;
+									let url = `/api/v1/repositories/${organisation}/${repository}/`;
+
+									$http.get(url + "members").then(
+											function(response) {
+												$scope.users = response.data;
+											}
+									);
+
+								}
+
+							});
+			/*]]>*/
+		</script>
+
+		<div ng-app="myApp" ng-controller="commitsChartsCtrl">
+			<div class="container">
+				<div class="row">
+					<div class="col-sm">
+						Select a repository: <br /> <select ng-model="selectedRepo"
+							ng-options="item as item.display for item in repos"
+							ng-change="loadRepo()" required="true">
+							<option value="">Select a repository to view users</option>
+						</select>
+					</div>
+
+				</div>
+
+				<div class="row top15"></div>
+			</div>
+
+
+			<div class="container">
+
+				<div class="row">
+
+					<div class="col-sm">User</div>
+
+					<div class="col-sm">Should be</div>
+
+					<div class="col-sm">User</div>
+
+				</div>
+				<div class="row top15" ng-repeat="user in users track by $index">
+
+					<div class="col-sm">
+						<i> {{user.name}} ({{user.email}})</i>
+					</div>
+					<div class="col-sm">-----------------></div>
+
+					<div class="col-sm">
+						<select ng-model="newUsers[user.id]"
+							ng-options="item.id as item.name for item in users">
+							<option value="">Select a new user</option>
+						</select>
+					</div>
+
+				</div>
+
+				<div class="row top15">
+					<div class="col-sm">
+						<input type="submit" value="Submit Updates"
+							ng-click="submitUpdates()" />
+
+					</div>
+
+				</div>
+
+			</div>
+
+		</div>
+		<a href="/index">Home</a>
+	</div>
+</body>
+</html>

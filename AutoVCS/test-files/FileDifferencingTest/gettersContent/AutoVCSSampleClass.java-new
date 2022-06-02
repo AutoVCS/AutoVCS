@@ -1,0 +1,10 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+	
+    public String getAString(){
+	    String toReturn = String.format("My string is :%s", aString);
+	
+	    return toReturn;
+	}
+}

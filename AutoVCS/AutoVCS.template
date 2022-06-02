@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>View Contribution Summaries</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+	crossorigin="anonymous" />
+<style>
+.top15 {
+	margin-top: 15px;
+}
+</style>
+<script src="https://kit.fontawesome.com/8b14d54041.js"
+	crossorigin="anonymous"></script>
+</head>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+	integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+	crossorigin="anonymous"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+	integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+	crossorigin="anonymous"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+	crossorigin="anonymous"></script>
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<body>
+	<h1>View Contribution Summaries</h1>
+	<div layout:fragment="content">
+
+		<script>
+			/*<![CDATA[*/
+			var app = angular.module('myApp', []);
+			app
+					.controller(
+							'contributionSummaries',
+							function($scope, $http, $q) {
+
+								$scope.submit = {};
+
+								$scope.dispError = false;
+								$scope.displayContribs = true;
+
+								$scope.formatDate = function(date) {
+									return (new Date(date)).toLocaleString();
+									
+								}
+								
+								$scope.allContributions = AUTOVCS_JSON_DATA;
+								
+							});
+			/*]]>*/
+		</script>
+
+		<div ng-app="myApp" ng-controller="contributionSummaries">
+			<div class="container">
+
+				<div class="row top15"></div>
+
+				<div class="row">
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="score">Display one score
+						{{submit.type}} ?</input>
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="summaries">Display
+						summaries {{submit.type}}?</input>
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="details">Display details
+						{{submit.type}}?</input>
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="commits">Display commits
+						for each user?</input>
+					</div>
+
+				</div>
+
+
+				<div class="top15" id="commits" ng-show="displayContribs">
+					<h3>Contributions Data</h3>
+					<div class="row top15"
+						ng-repeat="(commitOrUser, contributions) in allContributions track by $index">
+
+
+						<div class="top15">
+
+							<div ng-show="score">
+								<strong>{{commitOrUser}} -- Contribution Score:
+									{{contributions.contributionsScore}}</strong>
+							</div>
+							<div ng-show="score">
+								<i>Percentage contribution to team:
+									{{contributions.contributionsScorePercent}}%</i>
+							</div>
+
+
+							<div ng-hide="score">
+								<strong>{{commitOrUser}}</strong>
+							</div>
+
+
+
+							<div class="col-sm" ng-show="summaries"
+								ng-repeat="(contribution, count) in contributions.binnedChangesCounts track by $index">
+								{{contribution}} -- {{count}} time(s)</div>
+
+
+
+							<div class="col-sm" ng-show="commits">
+								<strong>Commits</strong>
+								<div ng-repeat="commit in contributions.commits track by $index">
+
+									<div ng-show="$index === 0">
+										<strong><code>{{commit.commitMessage}}</code>
+											({{formatDate(commit.date)}}) <a href="{{commit.url}}"><i
+												class="fas fa-external-link-square-alt"></i></a></strong>
+									</div>
+
+
+									<div ng-show="$index != 0">
+										<code>{{commit.commitMessage}}</code>
+										({{formatDate(commit.date)}}) <a href="{{commit.url}}"><i
+											class="fas fa-external-link-square-alt"></i></a>
+									</div>
+
+								</div>
+							</div>
+
+
+
+							<div class="col-sm" ng-show="details">
+								<strong>Detailed Changes</strong>
+								<div
+									ng-repeat="changedFile in contributions.changes track by $index">
+
+									<div ng-show="changedFile.score != 0">
+										Changes to
+										<code>{{changedFile.fileName}}</code>
+										<div
+											ng-repeat="(changesInFile,countInFile) in changedFile.binnedChangesCounts track by $index">
+											&nbsp;&nbsp;{{changesInFile}} -- {{countInFile}} time(s)</div>
+									</div>
+
+
+								</div>
+
+							</div>
+
+						</div>
+					</div>
+
+				</div>
+
+
+				<div ng-show="dispError" class="row top15">
+					<p style="color: red">{{errorMessage}}</p>
+				</div>
+
+
+			</div>
+
+
+
+
+		</div>
+	</div>
+</body>
+</html>

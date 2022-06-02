@@ -1,0 +1,12 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+	
+    public Object doSomething(){
+	    int aVal = 5;
+		String anotherVal = "This is a test";
+		
+		return anotherVal + aVal;
+	
+	}
+}

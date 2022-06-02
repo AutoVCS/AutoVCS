@@ -1,0 +1,24 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+    
+    private Integer anInteger;
+    
+    
+    static private class InnerClass {
+    
+    
+        private Object innerClassField1;
+        
+        private Boolean innerClassField2;
+        
+        
+        public Object InnerClassMethod() {
+        
+            Object result = String.format("%s,%s",innerClassField1,innerClassField2);
+            
+            return result;
+        }
+    }
+    
+}

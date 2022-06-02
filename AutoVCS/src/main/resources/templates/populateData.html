@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Populate data from Github</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<style>
+.top15 {
+	margin-top: 15px;
+}
+
+.top5 {
+	margin-top: 5px;
+}
+</style>
+</head>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+	crossorigin="anonymous" />
+
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+	crossorigin="anonymous"></script>
+
+<body>
+
+	<div layout:fragment="content">
+
+		<script>
+			/*<![CDATA[*/
+			var app = angular.module('myApp', []);
+			app
+					.controller(
+							'populateCtrl',
+							function($scope, $http, $q) {
+
+								$scope.inProgress = false;
+								$scope.progressMessage = "Fetching data....this may take a while";
+
+								$scope.success = false;
+
+								$scope.failed = false;
+
+								$scope.submit = {};
+
+								$scope.warning = [];
+
+								$scope.unableToCheckDuplicates = undefined;
+
+								$scope.fetch = function() {
+									$scope.success = false;
+									$scope.inProgress = true;
+									$scope.failed = false;
+
+									$scope.errorMessage = "";
+
+									$scope.warning = [];
+
+									$scope.unableToCheckDuplicates = undefined;
+
+									$http
+											.post(
+													"/api/v1/populateRepositories/",
+													$scope.submit)
+											.then(
+													function(response) {
+														$scope.successMessage = "Successfully fetched data for "
+																+ response.data.howManyFetched
+																+ (1 === response.data.howManyFetched ? " repository"
+																		: " repositories");
+														$scope.warning = response.data.reposWithDuplicateUsers;
+														$scope.unableToCheckDuplicates = response.data.unableToCheckDuplicateUsers;
+														$scope.success = true;
+														$scope.inProgress = false;
+
+													},
+													function(error) {
+														$scope.errorMessage = error.data.message;
+														$scope.failed = true;
+														$scope.inProgress = false;
+
+													});
+								}
+
+							});
+			/*]]>*/
+		</script>
+
+		<div ng-app="myApp" ng-controller="populateCtrl">
+
+			<div class="container">
+
+				<h1>Populate database from Github API</h1>
+
+				<div class="top15">
+
+					Enter the Github organisation or user to populate data for.
+					Application <i>must</i> be setup with a Github token that has
+					access to this organisation or user. <br /> <input type="text"
+						ng-model="submit.organisation" required="true" />
+
+				</div>
+				
+				<div class="top15">
+					<input type="checkbox" name="user" class="checkbox"
+						ng-model="submit.user">This is a User (not an Organisation)</input>
+				</div>
+				
+				
+				<div class="top15">
+					Enter the repository prefix to populate data for. This will fetch
+					data for all repositories that <i>begin</i> with this name (for
+					repositories; for individual users, performs an exact match). <br />
+					<input type="text" ng-model="submit.repository" required="true" />
+
+				</div>
+				<div class="top15">
+					<input type="checkbox" name="commit" class="checkbox"
+						ng-model="submit.commit">Include commits</input>
+				</div>
+				<div ng-show="submit.commit">
+					<div class="top5" style="padding-left: 10px">
+						<input type="checkbox" name="fetchAll" class="checkbox"
+							ng-model="submit.fetchAllHistory">Fetch all history
+						(otherwise, just fetches history since the most recent commits)</input>
+					</div>
+
+					<div class="top5" style="padding-left: 10px" ng-show="!submit.user">
+					
+						<input type="checkbox" name="checkDuplicates" class="checkbox"
+							ng-model="submit.checkDuplicates">Check for duplicate
+						users</input>&nbsp;&nbsp;<i><strong>NOTE:</strong> This uses teams
+							configured through Github Enterprise to identify cases where
+							there are users who have made a commit that are not present on
+							the team. This will not work properly on Github.com. It is <strong>strongly
+								encouraged</strong> that you first <a href="manageExcludedUsers.html"
+							target="_blank">create a user</a> (opens in new window) for any
+							Teaching Staff who have committed to the repository or you will
+							get extraneous warnings.</i>
+					</div>
+				</div>
+				<div class="top15">
+					<input type="checkbox" name="pr" class="checkbox"
+						ng-model="submit.pr">Include pull requests</input>
+				</div>
+
+
+
+				<div class="top15">
+					<input type="submit" value="Fetch Data" ng-click="fetch()" />
+				</div>
+
+
+
+				<div id="response" class="top15">
+
+					<div class="alert alert-success" ng-if="success">{{successMessage}}</div>
+
+
+					<div class="alert alert-warning" ng-if="inProgress">
+						{{progressMessage}}</div>
+
+					<div class="alert alert-warning" ng-if="0 != warning.length">
+
+
+						Duplicate users were found on the following repositories:
+						<div ng-repeat="repo in warning">{{repo}}</div>
+
+
+					</div>
+					<div ng-if="unableToCheckDuplicates">
+
+						<div class="alert alert-warning" ng-if="submit.checkDuplicates">
+
+							Unable to check for duplicate user on one or more repositories:
+
+							<div
+								ng-repeat="(repo, message) in unableToCheckDuplicates track by $index">
+
+								<div>
+									<tt>{{repo}}</tt>
+									<i> {{message}}</i>
+								</div>
+								<br />
+							</div>
+
+						</div>
+					</div>
+
+
+					<div class="alert alert-danger" ng-if="failed">
+						<br /> {{errorMessage}}
+
+					</div>
+				</div>
+
+				<div class="top15">
+					<a href="/index">Home</a>
+				</div>
+
+
+			</div>
+		</div>
+
+	</div>
+
+
+
+</body>
+</html>

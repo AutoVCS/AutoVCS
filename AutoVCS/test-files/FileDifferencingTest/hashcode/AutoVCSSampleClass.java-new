@@ -1,0 +1,8 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+	
+	public int hashCode(){
+	    return aString.hashCode();
+	}
+}

@@ -1,0 +1,8 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+	
+    public void setAString(String aString){
+	    this.aString = aString;
+	}
+}

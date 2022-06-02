@@ -1,0 +1,10 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+	
+	int changedMethod(){
+	    return 4;
+	}
+	
+
+}

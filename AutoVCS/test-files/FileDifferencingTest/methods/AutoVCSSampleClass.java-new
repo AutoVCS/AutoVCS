@@ -1,0 +1,15 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+    
+    public String myStringMethod(){
+	    System.out.println("");
+		int x = a + 50;
+		return "";
+	}
+	
+	int changedMethod(){
+	    return 6;
+	}
+    
+}

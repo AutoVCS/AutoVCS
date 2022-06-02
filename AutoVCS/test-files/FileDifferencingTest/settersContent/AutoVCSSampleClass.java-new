@@ -1,0 +1,11 @@
+public class AutoVCSSampleClass {
+
+    private String aString;
+	
+    public void setAString(String aNewString){
+	    if (null == aNewString){
+		    throw new IllegalArgumentException("Parameter may not be null!");
+		}
+	    aString = aNewString;
+	}
+}

@@ -86,7 +86,9 @@ The JSON configuration file expects the following format:
 	}
   ]
 
-}```
+}
+
+```
 
 You can pass multiple repository matchers to the `repositories` field, and can use any combination of prefix matching or exact matching.  For example, the following configuration matches against the repository `LabRepository`, or any repositories that start with `LabRepositoryA`.  Additionally, it performs no date filtering, and considers commits from any time window.
 

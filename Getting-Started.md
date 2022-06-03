@@ -62,6 +62,8 @@ Batch mode takes the following command-line parameters (and has the associated d
 - `threads` (default: `min(8, numCPUs)`): Number of worker threads to use for running analyses in parallel.  From our experience, analysis performance is limited more by filesystem performance than CPU performance, but we suggest not increasing this past `2*numCPUs` or 16 threads total, whichever is lower.
 
 
+Parameters are specified using the format `--parameterName=value`, and can be provided in any order.
+
 #### Config File Format
 
 The JSON configuration file expects the following format:

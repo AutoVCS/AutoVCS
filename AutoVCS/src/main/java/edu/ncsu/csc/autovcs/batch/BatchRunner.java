@@ -12,6 +12,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.kohsuke.github.GHOrganization;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
@@ -39,13 +45,12 @@ public class BatchRunner {
      */
     public static void main ( final String[] args ) throws Exception {
 
-        /* Load in config files, prepare output folder */
-
-        final Path configurationFile = Path.of( args[0] );
-
-        final Path templateFile = Path.of( args[1] );
-
-        final boolean debug = 3 == args.length ? Boolean.valueOf( args[2] ) : false;
+        final CommandLine line = parseOptions( args );
+        final Path configurationFile = Path.of( getConfigurationFile( line ) );
+        final Path templateFile = Path.of( getTemplateFile( line ) );
+        final boolean debug = getDebug( line );
+        final Integer timeout = getTimeout( line );
+        final Integer nCPUs = getNCPUs( line );
 
         final File output = new File( "output" );
         output.mkdir();
@@ -68,7 +73,7 @@ public class BatchRunner {
 
         final BatchConfiguration bc = gson.fromJson( configuration, BatchConfiguration.class );
 
-        final ExecutorService threadPool = Executors.newFixedThreadPool( 8 );
+        final ExecutorService threadPool = Executors.newFixedThreadPool( nCPUs );
 
         /*
          * JSON array supports running arbitrarily many different repositories,
@@ -141,7 +146,7 @@ public class BatchRunner {
 
         threadPool.shutdown();
 
-        threadPool.awaitTermination( 1, TimeUnit.HOURS );
+        threadPool.awaitTermination( timeout, TimeUnit.HOURS );
 
         System.out.println( "\n\n\n\n\n\n\n\n" );
         System.out.println( "##########################################################" );
@@ -197,6 +202,69 @@ public class BatchRunner {
             Files.writeString( outputFile, builtPage );
         }
 
+    }
+
+    static private CommandLine parseOptions ( final String[] args ) {
+
+        final Options options = new Options();
+        options.addOption( new Option( "d", "debug", false, "Enable debug mode" ) );
+        options.addOption( new Option( "n", "threads", true, "Maximum number of worker threads for analysis" ) );
+        options.addOption( new Option( "te", "template", true, "Location of the template file" ) );
+        options.addOption( new Option( "c", "config", true,
+                "Location of JSON configuration file specifying what repositories to analyse" ) );
+        options.addOption(
+                new Option( "ti", "timeout", true, "Maximum time, in hours, to wait for analyses to complete" ) );
+
+        // create the parser
+        final CommandLineParser parser = new DefaultParser();
+        try {
+            // parse the command line arguments
+            final CommandLine line = parser.parse( options, args );
+            return line;
+        }
+        catch ( final ParseException exp ) {
+            // oops, something went wrong
+            System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
+            System.exit( -1 );
+            return null; // will never happen, but won't compile w/o it
+        }
+
+    }
+
+    static private Integer getNCPUs ( final CommandLine line ) {
+        if ( line.hasOption( "threads" ) ) {
+            return Integer.valueOf( line.getOptionValue( "threads" ) );
+        }
+        return Math.min( 8, Runtime.getRuntime().availableProcessors() );
+
+    }
+
+    static private String getTemplateFile ( final CommandLine line ) {
+        if ( line.hasOption( "template" ) ) {
+            return line.getOptionValue( "template" );
+        }
+        return "AutoVCS.template";
+    }
+
+    static private String getConfigurationFile ( final CommandLine line ) {
+        if ( line.hasOption( "config" ) ) {
+            return line.getOptionValue( "config" );
+        }
+        return "config.json";
+    }
+
+    static private Boolean getDebug ( final CommandLine line ) {
+        if ( line.hasOption( "debug" ) ) {
+            return Boolean.valueOf( line.getOptionValue( "debug" ) );
+        }
+        return false;
+    }
+
+    static private Integer getTimeout ( final CommandLine line ) {
+        if ( line.hasOption( "timeout" ) ) {
+            return Integer.valueOf( line.getOptionValue( "timeout" ) );
+        }
+        return 1;
     }
 
 }

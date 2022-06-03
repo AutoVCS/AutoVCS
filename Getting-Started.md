@@ -73,17 +73,17 @@ The JSON configuration file expects the following format:
   "repositories": [  // List of one or more repository matchers for creating summary pages.
   
     {
-	  "exactMatch": boolean,  // If `true`, this will exactly match the name (below) to a repository in the organisation (above); if `false` will match against any repositories that _start_ with the name below. 
-	  
-	  "name": string,  // Name of the repository to match; either full name, or prefix for wildcard matching.
-	  
-	  "excludeGUI": boolean,   // exclude GUI files from analysis
-	  
-	  "startDate": string,  // optional.  Used in combination with endDate, below, to just analyse contributions that fall within a certain time window.  Uses the ISO-8601 format: https://en.wikipedia.org/wiki/ISO_8601
-	  
-	  "endDate": string    // same as startDate, above.
-	  
-	}
+      "exactMatch": boolean,  // If `true`, this will exactly match the name (below) to a repository in the organisation (above); if `false` will match against any repositories that _start_ with the name below. 
+      
+      "name": string,  // Name of the repository to match; either full name, or prefix for wildcard matching.
+      
+      "excludeGUI": boolean,   // exclude GUI files from analysis
+      
+      "startDate": string,  // optional.  Used in combination with endDate, below, to just analyse contributions that fall within a certain time window.  Uses the ISO-8601 format: https://en.wikipedia.org/wiki/ISO_8601
+      
+      "endDate": string    // same as startDate, above.
+      
+    }
   ]
 
 }
@@ -99,22 +99,22 @@ You can pass multiple repository matchers to the `repositories` field, and can u
   "repositories": [
   
     {
-	  "exactMatch": true,
-	  
-	  "name": "LabRepository",
-	  
-	  "excludeGUI": true
-	  
-	},
-	
-	{
-	  "exactMatch": false,
-	  
-	  "name": "LabRepositoryA",
-	  
-	  "excludeGUI": true
-	  
-	}
+      "exactMatch": true,
+      
+      "name": "LabRepository",
+      
+      "excludeGUI": true
+      
+    },
+    
+    {
+      "exactMatch": false,
+      
+      "name": "LabRepositoryA",
+      
+      "excludeGUI": true
+      
+    }
   ]
 
 }

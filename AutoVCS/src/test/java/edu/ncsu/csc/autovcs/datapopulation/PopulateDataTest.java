@@ -1,10 +1,12 @@
 package edu.ncsu.csc.autovcs.datapopulation;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import edu.ncsu.csc.autovcs.DBUtils;
 import edu.ncsu.csc.autovcs.controllers.api.APIRepositoryController;
 import edu.ncsu.csc.autovcs.controllers.api.APIRepositoryController.RepositoryFetchInformation;
 import edu.ncsu.csc.autovcs.forms.PopulateDataForm;
@@ -21,6 +23,11 @@ public class PopulateDataTest {
     static private final String           NotExistsProj    = "ThisProjectDoesntExist";
 
     private final APIRepositoryController ctrl             = new APIRepositoryController();
+
+    @Before
+    public void setup () {
+        DBUtils.resetDB();
+    }
 
     @Test
     public void testSuccessfulPopulateDataFromGithub () {

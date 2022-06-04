@@ -45,4 +45,8 @@ public class HibernateUtil {
             sessionFactory.close();
         }
     }
+
+    public static Session getCurrentSession () {
+        return getSessionFactory().getCurrentSession();
+    }
 }

@@ -3,8 +3,10 @@ package edu.ncsu.csc.autovcs.analysis;
 import java.util.Map;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import edu.ncsu.csc.autovcs.DBUtils;
 import edu.ncsu.csc.autovcs.forms.ContributionsSummaryForm;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
 import edu.ncsu.csc.autovcs.services.ContributionAnalysisService;
@@ -14,6 +16,11 @@ public class ContributionsAnalysisTest {
 
     private static final String ORG = "AutoVCS";
     private static final String CM  = "AutoVCS-CoffeeMaker";
+
+    @Before
+    public void setup () {
+        DBUtils.resetDB();
+    }
 
     @Test
     public void testFullAnalysis () {

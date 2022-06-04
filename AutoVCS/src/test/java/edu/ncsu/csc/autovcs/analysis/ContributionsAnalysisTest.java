@@ -22,6 +22,11 @@ public class ContributionsAnalysisTest {
         DBUtils.resetDB();
     }
 
+    /**
+     * This test will spew _many_ NoSuchFileExceptions due to the changed
+     * structure of the CoffeeMaker project & files that were deleted. This is
+     * OK!
+     */
     @Test
     public void testFullAnalysis () {
 

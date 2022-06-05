@@ -106,13 +106,14 @@
 						ng-model="submit.organisation" required="true" />
 
 				</div>
-				
+
 				<div class="top15">
 					<input type="checkbox" name="user" class="checkbox"
-						ng-model="submit.user">This is a User (not an Organisation)</input>
+						ng-model="submit.user">This is a User (not an
+					Organisation)</input>
 				</div>
-				
-				
+
+
 				<div class="top15">
 					Enter the repository prefix to populate data for. This will fetch
 					data for all repositories that <i>begin</i> with this name (for
@@ -132,16 +133,17 @@
 					</div>
 
 					<div class="top5" style="padding-left: 10px" ng-show="!submit.user">
-					
+
 						<input type="checkbox" name="checkDuplicates" class="checkbox"
 							ng-model="submit.checkDuplicates">Check for duplicate
 						users</input>&nbsp;&nbsp;<i><strong>NOTE:</strong> This uses teams
-							configured through Github Enterprise to identify cases where
-							there are users who have made a commit that are not present on
-							the team. This will not work properly on Github.com. It is <strong>strongly
+							configured through an organisation to identify cases where there
+							are users who have made a commit that are not present on the
+							team. If you do not have teams configured to provide access to
+							each repository, it will not work properly. It is <strong>strongly
 								encouraged</strong> that you first <a href="manageExcludedUsers.html"
 							target="_blank">create a user</a> (opens in new window) for any
-							Teaching Staff who have committed to the repository or you will
+							Teaching Staff or bots who have committed to the repository or you will
 							get extraneous warnings.</i>
 					</div>
 				</div>

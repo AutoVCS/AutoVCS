@@ -1,16 +1,42 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-<title>NCSU Github Analysis</title>
+
+<style>
+.top15 {
+	margin-top: 15px;
+}
+
+
+</style>
+<title>AutoVCS</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+	crossorigin="anonymous" />
+
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+	crossorigin="anonymous"></script>
 </head>
 <body>
-	<h1>Github Analysis</h1>
-	<ul>
-		<li><a href="populateData.html">Populate Github Data</a></li>
-		<li><a href="remapUsers.html">Remap Users</a></li>
-		<li><a href="viewContributions.html">View User Contributions</a></li>
-		<li><a href="manageExcludedUsers.html">Manage Excluded Users</a></li>
-	</ul>
+	<div class="container">
+	<h1>Welcome to AutoVCS!</h1>
+	
+	Please choose from one of the following options:
+	
+	<div class="row top15">
+	</div>
+		<ul>
+			<li><a href="populateData.html">Populate Github Data</a></li>
+			<li><a href="manageExcludedUsers.html">Manage Excluded Users</a></li>
+			<li><a href="remapUsers.html">Remap Users</a></li>
+			<li><a href="viewContributions.html">View User Contributions</a></li>
+			
+		</ul>
+	</div>
 </body>
 </html>

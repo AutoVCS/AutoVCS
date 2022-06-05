@@ -22,6 +22,22 @@ Finally, individual edit operations are aggregated into higher-level summaries o
 
 
 
+## Contributions Summaries
+
+Contributions summaries are produced at three granularity levels: 
+
+- (I) Single Contributions Score: Each user's contributions are condensed into a single score.  In addition, these scores are used to calculate a percentage contribution for each user.  
+- (II) Contributions summaries: These summaries present the counts of _additions_ and _updates_ to each of the categories from above.  Note that _deletions_ are skipped over -- this is perhaps not ideal, because sometimes bugs are fixed by deleting code, but more often we find that significant code is deleted to prepare for a refactoring, and this action doesn't mean much.
+- (III) Contributions summaries per file: The same as above, but now changes made are broken down on a per-file basis.  If the teaching staff knows that changes to one ifle are likely particularly difficult, this nuance can help.
+
+Options I and II are shown in the following image:
+
+![](figures/AutoVCS_ContributionsData_Annotated.png)
+
+In addition, a list of commits is shown for each user to account for non-code contributions (IV).
+
+
+
 ## Implementation Details
 
 ### GUI Files
@@ -38,4 +54,12 @@ Our improved version of ChangeDistiller has been modified to skip over four type
 
 ### Contribution Weights
 
-Contributions summaries are produced at three granularity levels: 
+The following weights are used when calculating individual scores, and for grouping changes:
+
+  - Class: 100 points
+  - Method: 25 points
+  - Field (in a class, not individual variable declarations): 10 points
+  - Documentation (including JavaDoc, /* */, and // comments): 1 point
+  - All other changes
+
+These categories and weights are inspired by a simplified version of change types proposed by Gall et al.'s "Change analysis with evolizer and ChangeDistiller"

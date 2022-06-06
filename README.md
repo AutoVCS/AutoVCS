@@ -13,9 +13,18 @@ Rather than simply reporting the number of lines of code added/removed by each d
 
 ![](figures/AutoVCS_ContributionsData_Annotated.png)
 
-Details explaining I-IV are shown on the [algorithm](AutoVCS-Algorithm) page.
+Details explaining I-IV are shown on the [algorithm](AutoVCS-Algorithm.md) page.
 
-Interested in seeing how AutoVCS can work for you?  Check out [Getting Started](Getting-Started).  Interested in seeing our algorithm for summarising individual contributions?  Check out the [algorithm](AutoVCS-Algorithm) details.  
+Interested in seeing how AutoVCS can work for you?  Check out [Getting Started](Getting-Started.md).  Interested in seeing our algorithm for summarising individual contributions?  Check out the [algorithm](AutoVCS-Algorithm.md) details.  Want to use AutoVCS to support grading in your class?  Check out our [suggested workflow](Using-AutoVCS.md).
+
+## Contributing
+
+We welcome bug reports and feature requests!  
+
+If you are interested in contributing new code, please reach out to see if the feature you are considering is already underway.
+
+
+## References
 
 
 [1] Beat Fluri, Michael Würsch, Martin Pinzger, and Harald C. Gall. Change Distilling: Tree Differencing for Fine-Grained Source Code Change Extraction. IEEE Transaction on Software Engineering, 33(11), pp. 725-743, 2007.

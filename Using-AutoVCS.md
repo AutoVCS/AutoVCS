@@ -87,3 +87,16 @@ Behaviour when attempting circular remappings (for example, all commits from Use
 _this featue is currently under development, please check back in the future_ :)
 
 ## Create Contributions Summaries
+
+Finally, you can use AutoVCS to create contributions summaries for each repository.  We suggest you use the [Batch Runner](https://github.com/AutoVCS/AutoVCS/blob/main/Getting-Started.md#batch-mode), as its performance is much better, and produces standalone HTML pages that can be given to TAs to facilitate grading.
+
+As discussed, the batch runner takes five arguments configuring the analysis process, all of which are optional.  
+
+If you wish to pass arguments to the batch runner, they can be passed through an IDE, such as Eclipse, by altering the run configuration:
+
+![](figures/getting-started/BatchRunnerIDE.png)
+
+
+If you choose to run AutoVCS from the command line, these arguments can be passed directly to Maven instead, using the `-Dexec.args` switch.  For example, to use up to 16 threads for parallel analyses and enable debug mode, you would run: `mvn exec:java -Dexec.args="--threads=16 --debug"`
+
+

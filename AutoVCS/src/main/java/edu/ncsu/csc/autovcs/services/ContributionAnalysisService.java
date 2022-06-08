@@ -32,10 +32,10 @@ import edu.ncsu.csc.autovcs.controllers.api.APIRepositoryController;
 import edu.ncsu.csc.autovcs.forms.ContributionsSummaryForm;
 import edu.ncsu.csc.autovcs.forms.PopulateDataForm;
 import edu.ncsu.csc.autovcs.models.persistent.GHCommit;
+import edu.ncsu.csc.autovcs.models.persistent.GHCommit.DisplayCommit;
 import edu.ncsu.csc.autovcs.models.persistent.GHFile;
 import edu.ncsu.csc.autovcs.models.persistent.GHRepository;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
-import edu.ncsu.csc.autovcs.models.persistent.GHCommit.DisplayCommit;
 
 public class ContributionAnalysisService {
 
@@ -61,16 +61,12 @@ public class ContributionAnalysisService {
 
     static public Map<GitUser, ChangeSummariesList> aggregateByUser ( final ContributionsSummaryForm csf ) {
 
-        final List< ? > contributionsList = createUnaggregatedDiffs( csf );
+        final ContributionsSummaries summaries = createUnaggregatedDiffs( csf );
 
         /* TODO: Use a tuple, and not a list */
-        @SuppressWarnings ( "unchecked" )
-        final Map<GHCommit, ChangeSummariesList> contributionsPerCommit = (Map<GHCommit, ChangeSummariesList>) contributionsList
-                .get( 0 );
+        final Map<GHCommit, ChangeSummariesList> contributionsPerCommit = summaries.getContributionsPerCommit();
 
-        @SuppressWarnings ( "unchecked" )
-        final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser = (Map<GitUser, List<DisplayCommit>>) contributionsList
-                .get( 1 );
+        final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser = summaries.getCommitsPerUser();
 
         final Map<GitUser, List<ChangeSummary>> remappedContributions = new HashMap<GitUser, List<ChangeSummary>>();
 
@@ -137,7 +133,7 @@ public class ContributionAnalysisService {
 
     }
 
-    private static List< ? > createUnaggregatedDiffs ( final ContributionsSummaryForm form ) {
+    private static ContributionsSummaries createUnaggregatedDiffs ( final ContributionsSummaryForm form ) {
         final String repo = form.getRepository();
         final String organisation = form.getOrganisation();
 
@@ -346,10 +342,10 @@ public class ContributionAnalysisService {
             throw new NoSuchElementException( "There was no data matching the parameters requested" );
         }
         if ( "BY_COMMIT".equals( form.getType() ) ) {
-            return List.of( contributionsPerCommit );
+            return new ContributionsSummaries( contributionsPerCommit, null );
         }
         else if ( "BY_USER".equals( form.getType() ) ) {
-            return List.of( contributionsPerCommit, commitsPerUser );
+            return new ContributionsSummaries( contributionsPerCommit, commitsPerUser );
         }
         else {
             throw new IllegalArgumentException( "Unrecognised aggregation option" );
@@ -398,6 +394,29 @@ public class ContributionAnalysisService {
 
         public List<GHCommit.DisplayCommit> getCommits () {
             return this.commits;
+        }
+
+    }
+
+    public static final class ContributionsSummaries {
+
+        Map<GHCommit, ChangeSummariesList>         contributionsPerCommit;
+
+        Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser;
+
+        public ContributionsSummaries ( final Map<GHCommit, ChangeSummariesList> contributionsPerCommit,
+                final Map<GitUser, List<DisplayCommit>> commitsPerUser ) {
+            super();
+            this.contributionsPerCommit = contributionsPerCommit;
+            this.commitsPerUser = commitsPerUser;
+        }
+
+        public Map<GHCommit, ChangeSummariesList> getContributionsPerCommit () {
+            return contributionsPerCommit;
+        }
+
+        public Map<GitUser, List<GHCommit.DisplayCommit>> getCommitsPerUser () {
+            return commitsPerUser;
         }
 
     }

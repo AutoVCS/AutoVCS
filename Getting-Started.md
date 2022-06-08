@@ -55,7 +55,7 @@ Batch mode takes the following command-line parameters (and has the associated d
 
 - `config` (default: `config.json`): A JSON configuration file detailing which repositories to create summaries for.  The format of this file is explained in more detail, with an example, below.
 
-- `debug` (default: `false`): If enabled, prints out details for any repository where summary reports could not be made.  If disabled (default), only shows a list of repositories where summary reports could not be made.
+- `debug` (default: `false`): If enabled, prints out details for any repository where summary reports could not be made.  If disabled (default), only shows a list of repositories where summary reports could not be made.  Note, unlike all other parameters, as this is a binary toggle, it does not use the `--parameterName=value` syntax.  Instead, just use `--debug` to enable debug mode.
 
 - `timeout` (default: `1` (hours)): Maximum to wait for all analyses to complete.  If you're running many repositories but on few threads, consider increasing this.
 

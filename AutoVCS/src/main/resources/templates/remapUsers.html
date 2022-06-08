@@ -28,7 +28,7 @@
 	crossorigin="anonymous"></script>
 
 <body>
-	<h1>Remap Users</h1>
+
 	<div layout:fragment="content">
 
 		<script>
@@ -36,7 +36,7 @@
 			var app = angular.module('myApp', []);
 			app
 					.controller(
-							'commitsChartsCtrl',
+							'remapUsersCtrl',
 							function($scope, $http, $q) {
 
 								$scope.retrieveRepos = function() {
@@ -48,17 +48,19 @@
 								}
 
 								$scope.retrieveRepos();
-								
+
 								$scope.newUsers = {};
 
 								$scope.submitUpdates = function() {
 									console.log($scope);
-									
-									$http.post("/api/v1/users/remap", $scope.newUsers).then(function(response){
-										
-									}, function (error){
-										
-									});
+
+									$http.post("/api/v1/users/remap",
+											$scope.newUsers).then(
+											function(response) {
+
+											}, function(error) {
+
+											});
 
 								}
 
@@ -73,8 +75,7 @@
 									$http.get(url + "members").then(
 											function(response) {
 												$scope.users = response.data;
-											}
-									);
+											});
 
 								}
 
@@ -82,8 +83,10 @@
 			/*]]>*/
 		</script>
 
-		<div ng-app="myApp" ng-controller="commitsChartsCtrl">
+		<div ng-app="myApp" ng-controller="remapUsersCtrl">
 			<div class="container">
+				<h1>Remap Users</h1>
+
 				<div class="row">
 					<div class="col-sm">
 						Select a repository: <br /> <select ng-model="selectedRepo"
@@ -96,10 +99,6 @@
 				</div>
 
 				<div class="row top15"></div>
-			</div>
-
-
-			<div class="container">
 
 				<div class="row">
 
@@ -135,10 +134,12 @@
 
 				</div>
 
+
+				<a href="/index">Home</a>
 			</div>
 
 		</div>
-		<a href="/index">Home</a>
+
 	</div>
 </body>
 </html>

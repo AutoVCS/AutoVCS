@@ -39,9 +39,9 @@ public class BatchRunner {
     /**
      *
      * @param args
-     *            args0 is JSON configuration file describing what repos to run,
-     *            args1 is template file to substitute JSON data into args2 is
-     *            debug flag
+     *            Batch mode supports five run parameters, as described in the
+     *            documentation on our Github Repository:
+     *            https://github.com/AutoVCS/AutoVCS/blob/main/Getting-Started.md#batch-mode
      */
     public static void main ( final String[] args ) throws Exception {
 

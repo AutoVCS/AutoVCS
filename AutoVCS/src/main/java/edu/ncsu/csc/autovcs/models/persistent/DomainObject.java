@@ -1,10 +1,6 @@
 package edu.ncsu.csc.autovcs.models.persistent;
 
 import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,7 +55,7 @@ public abstract class DomainObject <D extends DomainObject<D>> {
      */
     protected static List< ? extends DomainObject> getAll ( final Class cls ) {
         List< ? extends DomainObject> results = null;
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
         try {
             session.beginTransaction();
             results = session.createCriteria( cls ).setResultTransformer( Criteria.DISTINCT_ROOT_ENTITY ).list();
@@ -67,7 +63,7 @@ public abstract class DomainObject <D extends DomainObject<D>> {
         finally {
             try {
                 session.getTransaction().commit();
-                session.close();
+                // session.close();
             }
             catch ( final Exception e ) {
                 e.printStackTrace( System.out );
@@ -76,47 +72,6 @@ public abstract class DomainObject <D extends DomainObject<D>> {
         }
 
         return results;
-    }
-
-    /**
-     * When we want to perform an update, rather than deleting and re-creating,
-     * we can perform a copyFrom instead. This is advantageous because it's
-     * faster and won't break references.
-     *
-     * @param other
-     *            Object to copy from
-     * @param includeId
-     *            Whether to copy the ID
-     */
-    public void copyFrom ( final DomainObject other, final Boolean includeId ) {
-        if ( !this.getClass().equals( other.getClass() ) ) {
-            throw new IllegalArgumentException( "Cannot copy between different types!" );
-        }
-        final List<Field> fields = Arrays.asList( this.getClass().getDeclaredFields() );
-        try {
-            for ( final Field f : fields ) {
-                final Integer modifiers = f.getModifiers();
-                if ( Modifier.isFinal( modifiers ) ) {
-                    continue;
-                }
-
-                f.setAccessible( true );
-                boolean id = false;
-                final List<Annotation> annotations = Arrays.asList( f.getAnnotations() );
-                for ( final Annotation annotation : annotations ) {
-                    if ( annotation.annotationType().equals( javax.persistence.Id.class ) ) {
-                        id = true;
-                    }
-                }
-                if ( ( id && includeId ) || !id ) {
-                    f.set( this, f.get( other ) );
-                }
-            }
-
-        }
-        catch ( final Exception e ) {
-            throw new IllegalArgumentException( e );
-        }
     }
 
     /**
@@ -135,7 +90,7 @@ public abstract class DomainObject <D extends DomainObject<D>> {
      * @return The resulting list of elements found
      */
     protected static List< ? extends DomainObject> getWhere ( final Class cls, final List<Criterion> criteriaList ) {
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
 
         List< ? extends DomainObject> results = null;
         try {
@@ -149,7 +104,7 @@ public abstract class DomainObject <D extends DomainObject<D>> {
         finally {
             try {
                 session.getTransaction().commit();
-                session.close();
+                // session.close();
             }
             catch ( final Exception e ) {
                 e.printStackTrace( System.out );
@@ -162,7 +117,7 @@ public abstract class DomainObject <D extends DomainObject<D>> {
 
     protected static List< ? extends DomainObject> getWhere ( final Class cls, final List<Criterion> criteriaList,
             final String orderBy, final Boolean asc, final Integer limit ) {
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
 
         List< ? extends DomainObject> results = null;
         try {
@@ -180,7 +135,7 @@ public abstract class DomainObject <D extends DomainObject<D>> {
         finally {
             try {
                 session.getTransaction().commit();
-                session.close();
+                // session.close();
             }
             catch ( final Exception e ) {
                 e.printStackTrace( System.out );
@@ -201,14 +156,14 @@ public abstract class DomainObject <D extends DomainObject<D>> {
      *            class to delete instances of
      */
     public static void deleteAll ( final Class cls ) {
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
         session.beginTransaction();
         final List<DomainObject> instances = session.createCriteria( cls ).list();
         for ( final DomainObject d : instances ) {
             session.delete( d );
         }
         session.getTransaction().commit();
-        session.close();
+        // session.close();
     }
 
     /**
@@ -217,17 +172,17 @@ public abstract class DomainObject <D extends DomainObject<D>> {
      * exists in the DB, then the existing record will be updated.
      */
     public void save () {
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
         session.beginTransaction();
         session.saveOrUpdate( this );
         session.getTransaction().commit();
-        session.close();
+        // session.close();
 
         getCache( this.getClass() ).put( getKey(), this );
     }
 
     public static void saveAll ( final List< ? extends DomainObject> objects ) {
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
         session.beginTransaction();
         for ( final DomainObject object : objects ) {
             session.saveOrUpdate( object );
@@ -237,7 +192,7 @@ public abstract class DomainObject <D extends DomainObject<D>> {
             }
         }
         session.getTransaction().commit();
-        session.close();
+        // session.close();
     }
 
     /**
@@ -245,11 +200,11 @@ public abstract class DomainObject <D extends DomainObject<D>> {
      * cannot be reversed.
      */
     public void delete () {
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
         session.beginTransaction();
         session.delete( this );
         session.getTransaction().commit();
-        session.close();
+        // session.close();
     }
 
     /**
@@ -270,11 +225,11 @@ public abstract class DomainObject <D extends DomainObject<D>> {
         catch ( final Exception e ) {
             return null;
         }
-        final Session session = HibernateUtil.openSession();
+        final Session session = HibernateUtil.getCurrentSession();
         session.beginTransaction();
         session.load( obj, (Serializable) id );
         session.getTransaction().commit();
-        session.close();
+        // session.close();
         return obj;
     }
 

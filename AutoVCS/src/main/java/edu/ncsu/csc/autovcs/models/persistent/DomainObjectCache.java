@@ -1,6 +1,7 @@
 package edu.ncsu.csc.autovcs.models.persistent;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,10 @@ public class DomainObjectCache <K extends Object, D extends DomainObject> {
      */
     public static DomainObjectCache getCacheByClass ( final Class cls ) {
         return cacheByClass.get( cls );
+    }
+
+    public static Collection<DomainObjectCache> getCaches () {
+        return cacheByClass.values();
     }
 
     /**

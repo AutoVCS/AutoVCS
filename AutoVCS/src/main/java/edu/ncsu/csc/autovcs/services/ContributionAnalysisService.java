@@ -78,6 +78,14 @@ public class ContributionAnalysisService {
 
             final GitUser author = commit.getAuthor();
 
+            /*
+             * Skip excluded users here so their contributions aren't factored
+             * into percentages
+             */
+            if ( author.isExcluded() ) {
+                return;
+            }
+
             final ChangeSummariesList contributions = e.getValue();
 
             /* If we don't already have a record for this user */

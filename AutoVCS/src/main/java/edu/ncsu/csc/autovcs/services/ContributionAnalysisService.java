@@ -63,7 +63,6 @@ public class ContributionAnalysisService {
 
         final ContributionsSummaries summaries = createUnaggregatedDiffs( csf );
 
-        /* TODO: Use a tuple, and not a list */
         final Map<GHCommit, ChangeSummariesList> contributionsPerCommit = summaries.getContributionsPerCommit();
 
         final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser = summaries.getCommitsPerUser();
@@ -127,12 +126,9 @@ public class ContributionAnalysisService {
 
     static public Map<String, ChangeSummariesList> aggregateByCommit ( final ContributionsSummaryForm csf ) {
 
-        final List< ? > contributions = createUnaggregatedDiffs( csf );
+        final ContributionsSummaries summaries = createUnaggregatedDiffs( csf );
 
-        /* TODO: Use a tuple, and not a list */
-        @SuppressWarnings ( "unchecked" )
-        final Map<GHCommit, ChangeSummariesList> contributionsPerCommit = (Map<GHCommit, ChangeSummariesList>) contributions
-                .get( 0 );
+        final Map<GHCommit, ChangeSummariesList> contributionsPerCommit = summaries.getContributionsPerCommit();
 
         final Map<String, ChangeSummariesList> changes = contributionsPerCommit.entrySet().stream()
                 .collect( Collectors.toMap( k -> k.getKey().getSha1(), v -> v.getValue() ) );

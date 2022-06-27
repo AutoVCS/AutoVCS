@@ -66,33 +66,23 @@ public class APIContributionsAnalysisTest {
 
         final Map<String, Map<String, Object>> unpacked = (Map<String, Map<String, Object>>) response;
 
-        unpacked.entrySet().forEach( entry -> {
+        final Map<String, Object> entry = unpacked.get( "changesPerUser" );
 
-            final String user = entry.getKey();
+        final Map<String, Object> kaiContribs = (Map<String, Object>) entry
+                .get( "Kai Presler-Marshall (kpresle@ncsu.edu)" );
 
-            final Map<String, Object> contribs = entry.getValue();
+        /*
+         * The way the JSON data deserialises, we don't get a nice type that we
+         * can cast into or deserialise into....instead we have this horrible
+         * hack, where our values that were originally ints are now doubles, so
+         * we need this fun
+         */
+        final Integer score = (int) (double) kaiContribs.get( "contributionsScore" );
 
-            /*
-             * The way the JSON data deserialises, we don't get a nice type that
-             * we can cast into or deserialise into....instead we have this
-             * horrible hack, where our values that were originally ints are now
-             * doubles, so we need this fun
-             */
-            final Integer score = (int) (double) contribs.get( "contributionsScore" );
+        final Integer scorePercent = (int) (double) kaiContribs.get( "contributionsScorePercent" );
 
-            final Integer scorePercent = (int) (double) contribs.get( "contributionsScorePercent" );
-
-            if ( user.toString().contains( "Kai" ) ) {
-                Assert.assertEquals( 2165, (int) score );
-                Assert.assertEquals( 100, (int) scorePercent );
-
-            }
-            else {
-                Assert.assertEquals( 0, (int) score );
-                Assert.assertEquals( 0, (int) scorePercent );
-            }
-
-        } );
+        Assert.assertEquals( 2165, (int) score );
+        Assert.assertEquals( 100, (int) scorePercent );
 
     }
 

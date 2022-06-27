@@ -41,7 +41,8 @@ public class ContributionsAnalysisTest {
         csf.setExcludeGUI( true );
         csf.setType( "BY_USER" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf );
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
+                .getChangesPerUser();
 
         /*
          * Only one user should show up here, b/c other users have only made
@@ -68,7 +69,8 @@ public class ContributionsAnalysisTest {
         csf.setStartDate( "2021-08-09T00:00:00Z" );
         csf.setEndDate( "2021-08-11T00:00:00Z" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf );
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
+                .getChangesPerUser();
 
         final GitUser kai = GitUser.getByEmailContaining( "kpresle@ncsu.edu" ).get( 0 );
         final ChangeSummariesList kaiContributions = aggregatedChanges.get( kai );
@@ -86,7 +88,8 @@ public class ContributionsAnalysisTest {
         csf.setExcludeGUI( true );
         csf.setType( "BY_USER" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf );
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
+                .getChangesPerUser();
 
         /* Two users on the project, both should show up */
         Assert.assertEquals( 2, aggregatedChanges.size() );
@@ -229,7 +232,8 @@ public class ContributionsAnalysisTest {
         csf.setExcludeGUI( true );
         csf.setType( "BY_USER" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf );
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
+                .getChangesPerUser();
 
         /* Two users on the project, both should show up */
         Assert.assertEquals( 1, aggregatedChanges.size() );

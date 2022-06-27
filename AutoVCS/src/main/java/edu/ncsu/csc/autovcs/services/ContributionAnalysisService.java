@@ -40,26 +40,11 @@ import edu.ncsu.csc.autovcs.models.persistent.GitUser;
 public class ContributionAnalysisService {
 
     static public String getContributionSummaries ( final ContributionsSummaryForm form ) throws Exception {
-
-        if ( "BY_COMMIT".equals( form.getType() ) ) {
-
-            return write( aggregateByCommit( form ) );
-
-        }
-
-        else if ( "BY_USER".equals( form.getType() ) ) {
-
-            return write( aggregateByUser( form ) );
-
-        }
-        else {
-            /* Don't understand either approach for labeling commits */
-            throw new IllegalArgumentException( "Unknown aggregation option!" );
-        }
+        return write( aggregateByUser( form ) );
 
     }
 
-    static public Map<GitUser, ChangeSummariesList> aggregateByUser ( final ContributionsSummaryForm csf ) {
+    static public ContributionsSummariesAPIData aggregateByUser ( final ContributionsSummaryForm csf ) {
 
         final ContributionsSummaries summaries = createUnaggregatedDiffs( csf );
 
@@ -121,20 +106,44 @@ public class ContributionAnalysisService {
             summary.setCommits( commitsPerUser.get( entry.getKey() ) );
         }
 
-        return changes;
-    }
+        final Map<String, Map<GitUser, Double>> percentageContributionPerFile = new HashMap<String, Map<GitUser, Double>>();
 
-    static public Map<String, ChangeSummariesList> aggregateByCommit ( final ContributionsSummaryForm csf ) {
+        /**
+         * To display how involved each user was with each file that has been
+         * changed, we want to map:
+         *
+         * <pre>
+         * fileName ->
+         *   userA -> scorePercent
+         *   userB -> scorePercent
+         * fileName2 ->
+         *   userB -> scorePercent
+         *   userC -> scorePercent
+         * </pre>
+         *
+         * This double remapping converts the raw scores that were summed up
+         * from the previous steps into percentages
+         */
 
-        final ContributionsSummaries summaries = createUnaggregatedDiffs( csf );
+        summaries.getContributionsPerFile().forEach( ( fileName, fileContribs ) -> {
 
-        final Map<GHCommit, ChangeSummariesList> contributionsPerCommit = summaries.getContributionsPerCommit();
+            final Map<GitUser, Double> contributionsForIndividualFile = new HashMap<>();
 
-        final Map<String, ChangeSummariesList> changes = contributionsPerCommit.entrySet().stream()
-                .collect( Collectors.toMap( k -> k.getKey().getSha1(), v -> v.getValue() ) );
+            final Integer overallContributionToFile = fileContribs.getOverallScore();
 
-        return changes;
+            fileContribs.getContributionPerUser().forEach( ( user, contribution ) -> {
 
+                final Double percentContribution = ( (double) contribution ) / overallContributionToFile;
+
+                contributionsForIndividualFile.put( user, percentContribution );
+
+            } );
+
+            percentageContributionPerFile.put( fileName, contributionsForIndividualFile );
+
+        } );
+
+        return new ContributionsSummariesAPIData( changes, percentageContributionPerFile );
     }
 
     private static ContributionsSummaries createUnaggregatedDiffs ( final ContributionsSummaryForm form ) {
@@ -231,6 +240,8 @@ public class ContributionAnalysisService {
 
         final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser = new HashMap<GitUser, List<GHCommit.DisplayCommit>>();
 
+        final Map<String, FileContributions> contributionsPerFile = new HashMap<String, FileContributions>();
+
         commits.forEach( commit -> {
             if ( commit.isMergeCommit() ) {
                 return; // don't look at merges
@@ -325,6 +336,11 @@ public class ContributionAnalysisService {
                             String.format( "%s/%s", bPath, fileName ), String.format( "%s/%s", aPath, fileName ) );
                     if ( null != changesInFile ) {
                         changesForCommit.add( changesInFile );
+                        if ( !contributionsPerFile.containsKey( file.getFilename() ) ) {
+                            contributionsPerFile.put( file.getFilename(), new FileContributions() );
+                        }
+                        contributionsPerFile.get( file.getFilename() ).addContribution( commit.getAuthor(),
+                                changesInFile.getScore() );
                     }
                 }
                 catch ( final Exception e ) {
@@ -345,11 +361,8 @@ public class ContributionAnalysisService {
         if ( contributionsPerCommit.isEmpty() ) {
             throw new NoSuchElementException( "There was no data matching the parameters requested" );
         }
-        if ( "BY_COMMIT".equals( form.getType() ) ) {
-            return new ContributionsSummaries( contributionsPerCommit, null );
-        }
         else if ( "BY_USER".equals( form.getType() ) ) {
-            return new ContributionsSummaries( contributionsPerCommit, commitsPerUser );
+            return new ContributionsSummaries( contributionsPerCommit, commitsPerUser, contributionsPerFile );
         }
         else {
             throw new IllegalArgumentException( "Unrecognised aggregation option" );
@@ -404,15 +417,20 @@ public class ContributionAnalysisService {
 
     public static final class ContributionsSummaries {
 
-        Map<GHCommit, ChangeSummariesList>         contributionsPerCommit;
+        private final Map<GHCommit, ChangeSummariesList>         contributionsPerCommit;
 
-        Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser;
+        private final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser;
+
+        private final Map<String, FileContributions>             contributionsPerFile;
 
         public ContributionsSummaries ( final Map<GHCommit, ChangeSummariesList> contributionsPerCommit,
-                final Map<GitUser, List<DisplayCommit>> commitsPerUser ) {
+                final Map<GitUser, List<DisplayCommit>> commitsPerUser,
+                final Map<String, FileContributions> contributionsPerFile ) {
             super();
             this.contributionsPerCommit = contributionsPerCommit;
             this.commitsPerUser = commitsPerUser;
+            this.contributionsPerFile = contributionsPerFile;
+
         }
 
         public Map<GHCommit, ChangeSummariesList> getContributionsPerCommit () {
@@ -421,6 +439,61 @@ public class ContributionAnalysisService {
 
         public Map<GitUser, List<GHCommit.DisplayCommit>> getCommitsPerUser () {
             return commitsPerUser;
+        }
+
+        public Map<String, FileContributions> getContributionsPerFile () {
+            return contributionsPerFile;
+        }
+
+    }
+
+    public static final class FileContributions {
+        private Integer                     overallScore;
+
+        private final Map<GitUser, Integer> contributionPerUser;
+
+        public FileContributions () {
+            overallScore = 0;
+            contributionPerUser = new HashMap<GitUser, Integer>();
+
+        }
+
+        public void addContribution ( final GitUser who, final Integer contributionScore ) {
+            if ( !contributionPerUser.containsKey( who ) ) {
+                contributionPerUser.put( who, 0 );
+            }
+            contributionPerUser.put( who, contributionScore + contributionPerUser.get( who ) );
+            overallScore += contributionScore;
+        }
+
+        public Integer getOverallScore () {
+            return overallScore;
+        }
+
+        public Map<GitUser, Integer> getContributionPerUser () {
+            return contributionPerUser;
+        }
+
+    }
+
+    public static final class ContributionsSummariesAPIData {
+
+        private final Map<GitUser, ChangeSummariesList> changesPerUser;
+
+        private final Map<String, Map<GitUser, Double>> changesPerFile;
+
+        public ContributionsSummariesAPIData ( final Map<GitUser, ChangeSummariesList> changesPerUser,
+                final Map<String, Map<GitUser, Double>> percentageContributionPerFile ) {
+            this.changesPerUser = changesPerUser;
+            this.changesPerFile = percentageContributionPerFile;
+        }
+
+        public Map<GitUser, ChangeSummariesList> getChangesPerUser () {
+            return changesPerUser;
+        }
+
+        public Map<String, Map<GitUser, Double>> getChangesPerFile () {
+            return changesPerFile;
         }
 
     }

@@ -28,6 +28,8 @@
 	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
 	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
 	crossorigin="anonymous"></script>
+	
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.js"></script>
 
 <!-- Load d3.js -->
 <script src="https://d3js.org/d3.v4.js"></script>
@@ -59,6 +61,12 @@
 										return "<1";
 									return value.toFixed(2);
 								}
+								
+								function random_rgba() {
+								    var o = Math.round, r = Math.random, s = 255;
+								    return 'rgba(' + o(r()*s) + ',' + o(r()*s) + ',' + o(r()*s) + ',' + r().toFixed(1) + ')';
+								}
+								
 
 								$scope.fetch = function() {
 
@@ -80,7 +88,144 @@
 													$scope.submit)
 											.then(
 													function(response) {
-														$scope.allContributions = response.data;
+														$scope.allContributions = response.data.changesPerUser;
+														$scope.changesPerFile = response.data.changesPerFile;
+														
+														
+														
+														/** ------ Parse the data that is necessary to make the contributions-by-file chart ------ **/
+														
+														/* Gives a list of all files changed */
+														let changedFiles = Object.keys($scope.changesPerFile);
+														
+														/* Gives a list of all users who have done _something */
+														let users = Object.keys($scope.allContributions); 
+														
+														let contribsPerUser = Object();
+														
+														for (user of users){
+															contribsPerUser[user] = [];
+														}
+														
+														
+														for (changedFile of changedFiles){
+															let changeForFile = $scope.changesPerFile[changedFile];	
+															for (user of users){
+															    var contribToFile = 0;
+															    if (undefined != changeForFile[user]){
+															    	contribToFile = changeForFile[user];
+															    }
+															    contribsPerUser[user].push(contribToFile);
+															}
+														}
+														
+														
+														
+														const ctx = document.getElementById('myChart');
+
+
+														var barOptions_stacked = {
+														    tooltips: {
+														        enabled: false
+														    },
+														    hover :{
+														        animationDuration:0
+														    },
+														    scales: {
+														        xAxes: [{
+														            ticks: {
+														                beginAtZero:true,
+														                fontFamily: "'Open Sans Bold', sans-serif",
+														                fontSize:11
+														            },
+														            scaleLabel:{
+														                display:false
+														            },
+														            gridLines: {
+														            }, 
+														            stacked: true
+														        }],
+														        yAxes: [{
+														            gridLines: {
+														                display:false,
+														                color: "#fff",
+														                zeroLineColor: "#fff",
+														                zeroLineWidth: 0
+														            },
+														            ticks: {
+														                fontFamily: "'Open Sans Bold', sans-serif",
+														                fontSize:11
+														            },
+														            stacked: true
+														        }]
+														    },
+														    legend:{
+														        display: true,
+																position: 'bottom',
+																
+														    },
+														    
+														    animation: {
+														        onComplete: function () {
+														            var chartInstance = this.chart;
+														            var ctx = chartInstance.ctx;
+														            ctx.textAlign = "left";
+														            ctx.font = "9px Open Sans";
+														            ctx.fillStyle = "#fff";
+
+														            Chart.helpers.each(this.data.datasets.forEach(function (dataset, i) {
+														                var meta = chartInstance.controller.getDatasetMeta(i);
+														                Chart.helpers.each(meta.data.forEach(function (bar, index) {
+														                    data = dataset.data[index];
+														                    if(i==0){
+														                        ctx.fillText(data, 50, bar._model.y+4);
+														                    } else {
+														                        ctx.fillText(data, bar._model.x-25, bar._model.y+4);
+														                    }
+														                }),this)
+														            }),this);
+														        }
+														    },
+														    pointLabelFontFamily : "Quadon Extra Bold",
+														    scaleFontFamily : "Quadon Extra Bold",
+														};
+														
+														
+														datasets = [];
+														
+														colours = ["red", "green", "blue", "yellow", "purple", "orange", "black"];
+														
+														
+														var idx = 0;
+														
+														for (const [key, value] of Object.entries(contribsPerUser)) {
+															
+															datasets.push({
+																data: value,
+																label: key,
+																backgroundColor: colours[idx],
+																hoverBackgroundColor: colours[idx]
+															
+															});
+															idx++;
+															
+															
+														}
+														
+														var myChart = new Chart(ctx, {
+														    type: 'horizontalBar',
+														    data: {
+														        labels: changedFiles,
+														        
+														        datasets: datasets
+														    },
+
+														    options: barOptions_stacked,
+														});
+														
+														
+														
+														
 														$scope.displayContribs = true;
 													},
 													function(error) {
@@ -88,6 +233,12 @@
 														$scope.dispError = true;
 													});
 								}
+								
+								
+
+
+								
+								
 
 							});
 			/*]]>*/
@@ -199,6 +350,15 @@
 					<div class="col-sm">
 						<input type="checkbox" ng-model="commits">&nbsp;Display
 						commits for each user?</input>
+					</div>
+
+				</div>
+
+				<div class="top15" id="chart">
+
+					<div class="row"
+						style="position: relative; height: 400; width: 450">
+						<canvas id="myChart"></canvas>
 					</div>
 
 				</div>

@@ -46,24 +46,9 @@
 
 											});
 								}
-
-								$scope.retrieveRepos();
-
-								$scope.newUsers = {};
-
-								$scope.submitUpdates = function() {
-									console.log($scope);
-
-									$http.post("/api/v1/users/remap",
-											$scope.newUsers).then(
-											function(response) {
-
-											}, function(error) {
-
-											});
-
-								}
-
+								
+								
+								
 								$scope.loadRepo = function() {
 
 									$scope.repoSelected = true;
@@ -78,6 +63,54 @@
 											});
 
 								}
+								
+								
+								$scope.init = function (){
+									
+									const queryString = window.location.search;
+									
+									if ("" == queryString){
+										$scope.retrieveRepos();										
+									}
+									
+									else {
+										const urlParams = new URLSearchParams(queryString);
+										$scope.selectedRepo = {};
+										$scope.selectedRepo.organisation = urlParams.get("org");
+										$scope.selectedRepo.name = urlParams.get("repo");
+										$scope.loadRepo();
+										
+										/* Not really how the page is meant to be used in this mode, but in case they want to poke around, they can */
+										$scope.retrieveRepos();
+
+									}
+									
+									
+									$scope.newUsers = {};
+									
+								}
+								
+								
+								$scope.init();
+
+
+
+								
+
+								$scope.submitUpdates = function() {
+									console.log($scope);
+
+									$http.post("/api/v1/users/remap",
+											$scope.newUsers).then(
+											function(response) {
+
+											}, function(error) {
+
+											});
+
+								}
+
+
 
 							});
 			/*]]>*/
@@ -109,6 +142,12 @@
 					<div class="col-sm">User</div>
 
 				</div>
+				
+				<div class="row top15" ng-show="selectedRepo.organisation">
+				<strong>Remapping users on <tt>{{selectedRepo.organisation}}-{{selectedRepo.name}}</tt></strong>
+				
+				</div>
+				
 				<div class="row top15" ng-repeat="user in users track by $index">
 
 					<div class="col-sm">

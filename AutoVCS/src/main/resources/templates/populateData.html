@@ -27,6 +27,10 @@
 	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
 	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
 	crossorigin="anonymous"></script>
+	
+	
+<script src="https://kit.fontawesome.com/8b14d54041.js"
+	crossorigin="anonymous"></script>
 
 <body>
 
@@ -52,6 +56,8 @@
 								$scope.warning = [];
 
 								$scope.unableToCheckDuplicates = undefined;
+								
+								$scope.unableToCheckDuplicatesFlag = false;
 
 								$scope.fetch = function() {
 									$scope.success = false;
@@ -63,6 +69,7 @@
 									$scope.warning = [];
 
 									$scope.unableToCheckDuplicates = undefined;
+									$scope.unableToCheckDuplicatesFlag = false;
 
 									$http
 											.post(
@@ -76,8 +83,16 @@
 																		: " repositories");
 														$scope.warning = response.data.reposWithDuplicateUsers;
 														$scope.unableToCheckDuplicates = response.data.unableToCheckDuplicateUsers;
+														
 														$scope.success = true;
 														$scope.inProgress = false;
+														
+														if (!angular.equals($scope.unableToCheckDuplicates, {})){
+															$scope.unableToCheckDuplicatesFlag = true;
+														}
+														else {
+															$scope.unableToCheckDuplicatesFlag = false;
+														}
 
 													},
 													function(error) {
@@ -142,7 +157,8 @@
 							team. If you do not have teams configured to provide access to
 							each repository, it will not work properly. It is <strong>strongly
 								encouraged</strong> that you first <a href="manageExcludedUsers.html"
-							target="_blank">create a user</a> (opens in new window) for any
+							target="_blank">create a user <i
+										class="fas fa-external-link-square-alt"></i></a> for any
 							Teaching Staff or bots who have committed to the repository or you will
 							get extraneous warnings.</i>
 					</div>
@@ -172,11 +188,12 @@
 
 
 						Duplicate users were found on the following repositories:
-						<div ng-repeat="repo in warning">{{repo}}</div>
+						<div ng-repeat="repo in warning">{{repo}}&nbsp;<a href="remapUsers.html?org={{submit.organisation}}&amp;repo={{repo}}" target="_blank">(fix <i
+										class="fas fa-external-link-square-alt"></i>)</a></div>
 
 
 					</div>
-					<div ng-if="unableToCheckDuplicates">
+					<div ng-if="unableToCheckDuplicatesFlag">
 
 						<div class="alert alert-warning" ng-if="submit.checkDuplicates">
 

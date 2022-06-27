@@ -60,6 +60,6 @@ The following weights are used when calculating individual scores, and for group
   - Method: 25 points
   - Field (in a class, not individual variable declarations): 10 points
   - Documentation (including JavaDoc, /* */, and // comments): 1 point
-  - All other changes
+  - All other changes: 3 points
 
 These categories and weights are inspired by a simplified version of change types proposed by Gall et al.'s "Change analysis with evolizer and ChangeDistiller"

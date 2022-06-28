@@ -28,8 +28,9 @@
 	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
 	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
 	crossorigin="anonymous"></script>
-	
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.js"></script>
+
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.js"></script>
 
 <!-- Load d3.js -->
 <script src="https://d3js.org/d3.v4.js"></script>
@@ -312,6 +313,11 @@
 				<div class="row">
 
 					<div class="col-sm">
+						<input type="checkbox" ng-model="chart">&nbsp;Show a chart
+						for viewing high-level contributions to individual files?</input>
+					</div>
+
+					<div class="col-sm">
 						<input type="checkbox" ng-model="score">&nbsp;Display one
 						contributions score for each user?</input>
 					</div>
@@ -333,18 +339,17 @@
 
 				</div>
 
-				<div class="top15" id="chart">
-
-					<div class="row"
-						style="position: relative; height: 400; width: 450">
-						<canvas id="myChart"></canvas>
-					</div>
-
-				</div>
-
 
 				<div class="top15" id="commits" ng-show="displayContribs">
 					<h3>Contributions Data</h3>
+
+
+					<div class="row top15"
+						style="position: relative; height: 400; width: 450" ng-show="chart">
+						<canvas id="myChart"></canvas>
+					</div>
+
+
 					<div class="row top15"
 						ng-repeat="(commitOrUser, contributions) in allContributions track by $index">
 

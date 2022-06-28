@@ -11,8 +11,10 @@ import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -106,7 +108,7 @@ public class ContributionAnalysisService {
             summary.setCommits( commitsPerUser.get( entry.getKey() ) );
         }
 
-        final Map<String, Map<GitUser, Double>> percentageContributionPerFile = new HashMap<String, Map<GitUser, Double>>();
+        final Map<String, Map<GitUser, Double>> percentageContributionPerFile = new LinkedHashMap<String, Map<GitUser, Double>>();
 
         /**
          * To display how involved each user was with each file that has been
@@ -125,9 +127,20 @@ public class ContributionAnalysisService {
          * from the previous steps into percentages
          */
 
-        summaries.getContributionsPerFile().forEach( ( fileName, fileContribs ) -> {
+        /*
+         * Sort based on filename to make it easier for the user to find things
+         */
+        final List<Entry<String, FileContributions>> sortedContributions = new ArrayList<>(
+                summaries.getContributionsPerFile().entrySet() );
 
-            final Map<GitUser, Double> contributionsForIndividualFile = new HashMap<>();
+        sortedContributions.sort( ( a, b ) -> a.getKey().compareTo( b.getKey() ) );
+
+        sortedContributions.forEach( entry -> {
+
+            final String fileName = entry.getKey();
+            final FileContributions fileContribs = entry.getValue();
+
+            final Map<GitUser, Double> contributionsForIndividualFile = new LinkedHashMap<>();
 
             final Integer overallContributionToFile = fileContribs.getOverallScore();
 
@@ -336,10 +349,11 @@ public class ContributionAnalysisService {
                             String.format( "%s/%s", bPath, fileName ), String.format( "%s/%s", aPath, fileName ) );
                     if ( null != changesInFile ) {
                         changesForCommit.add( changesInFile );
-                        if ( !contributionsPerFile.containsKey( file.getFilename() ) ) {
-                            contributionsPerFile.put( file.getFilename(), new FileContributions() );
+                        final String filenameTrimmed = fileName.substring( fileName.lastIndexOf( "/" ) + 1 );
+                        if ( !contributionsPerFile.containsKey( filenameTrimmed ) ) {
+                            contributionsPerFile.put( filenameTrimmed, new FileContributions() );
                         }
-                        contributionsPerFile.get( file.getFilename() ).addContribution( commit.getAuthor(),
+                        contributionsPerFile.get( filenameTrimmed ).addContribution( commit.getAuthor(),
                                 changesInFile.getScore() );
                     }
                 }

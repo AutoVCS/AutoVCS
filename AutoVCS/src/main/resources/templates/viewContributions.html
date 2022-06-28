@@ -3,10 +3,6 @@
 <head>
 <title>View Contribution Summaries</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<link rel="stylesheet"
-	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
-	crossorigin="anonymous" />
 <style>
 .top15 {
 	margin-top: 15px;
@@ -20,14 +16,17 @@
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
 	integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
 	crossorigin="anonymous"></script>
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+	rel="stylesheet"
+	integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+	crossorigin="anonymous">
+</link>
 <script
-	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-	integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+	src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+	integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
 	crossorigin="anonymous"></script>
-<script
-	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-	crossorigin="anonymous"></script>
+
 
 <script
 	src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.js"></script>
@@ -340,81 +339,80 @@
 				</div>
 
 
-				<div class="top15" id="commits" ng-show="displayContribs">
+				<div class="row flex-column-reverse flex-md-row top15" id="commits"
+					ng-show="displayContribs">
 					<h3>Contributions Data</h3>
 
+					<div class="col-md-6">
 
-					<div class="row top15"
-						style="position: relative; height: 400; width: 450" ng-show="chart">
-						<canvas id="myChart"></canvas>
-					</div>
-
-
-					<div class="row top15"
-						ng-repeat="(commitOrUser, contributions) in allContributions track by $index">
+						<div class="row top15"
+							ng-repeat="(commitOrUser, contributions) in allContributions track by $index">
 
 
-						<div class="top15">
+							<div class="top15">
 
-							<div ng-show="score">
-								<strong>{{commitOrUser}} -- Contribution Score:
-									{{contributions.contributionsScore}}</strong>
-							</div>
-							<div ng-show="score">
-								<i>Percentage contribution to team:
-									{{format(contributions.contributionsScorePercent)}}%</i>
-							</div>
-
-
-							<div ng-hide="score">
-								<strong>{{commitOrUser}}</strong>
-							</div>
-
-
-
-							<div class="col-sm" ng-show="summaries"
-								ng-repeat="(contribution, count) in contributions.binnedChangesCounts track by $index">
-								{{contribution}} -- {{count}} time(s)</div>
-
-
-
-							<div class="col-sm" ng-show="commits">
-								<strong>Commits</strong>
-								<div ng-repeat="commit in contributions.commits track by $index">
-
-									<div ng-show="$index === 0">
-										<strong><code>{{commit.commitMessage}}</code>
-											({{formatDate(commit.date)}}) <a href="{{commit.url}}"
-											target="_blank"><i
-												class="fas fa-external-link-square-alt"></i></a></strong>
-									</div>
-
-
-									<div ng-show="$index != 0">
-										<code>{{commit.commitMessage}}</code>
-										({{formatDate(commit.date)}}) <a href="{{commit.url}}"
-											target="_blank"><i
-											class="fas fa-external-link-square-alt"></i></a>
-									</div>
-
+								<div ng-show="score">
+									<strong>{{commitOrUser}} -- Contribution Score:
+										{{contributions.contributionsScore}}</strong>
 								</div>
-							</div>
+								<div ng-show="score">
+									<i>Percentage contribution to team:
+										{{format(contributions.contributionsScorePercent)}}%</i>
+								</div>
+
+
+								<div ng-hide="score">
+									<strong>{{commitOrUser}}</strong>
+								</div>
 
 
 
-							<div class="col-sm" ng-show="details">
-								<strong>Detailed Changes</strong>
-								<div
-									ng-repeat="changedFile in contributions.changes track by $index">
+								<div class="col-sm" ng-show="summaries"
+									ng-repeat="(contribution, count) in contributions.binnedChangesCounts track by $index">
+									{{contribution}} -- {{count}} time(s)</div>
 
-									<div ng-show="changedFile.score != 0">
-										Changes to
-										<code>{{changedFile.fileName}}</code>
-										<div
-											ng-repeat="(changesInFile,countInFile) in changedFile.binnedChangesCounts track by $index">
-											&nbsp;&nbsp;{{changesInFile}} -- {{countInFile}} time(s)</div>
+
+
+								<div class="col-sm" ng-show="commits">
+									<strong>Commits</strong>
+									<div
+										ng-repeat="commit in contributions.commits track by $index">
+
+										<div ng-show="$index === 0">
+											<strong><code>{{commit.commitMessage}}</code>
+												({{formatDate(commit.date)}}) <a href="{{commit.url}}"
+												target="_blank"><i
+													class="fas fa-external-link-square-alt"></i></a></strong>
+										</div>
+
+
+										<div ng-show="$index != 0">
+											<code>{{commit.commitMessage}}</code>
+											({{formatDate(commit.date)}}) <a href="{{commit.url}}"
+												target="_blank"><i
+												class="fas fa-external-link-square-alt"></i></a>
+										</div>
+
 									</div>
+								</div>
 
+
+
+								<div class="col-sm" ng-show="details">
+									<strong>Detailed Changes</strong>
+									<div
+										ng-repeat="changedFile in contributions.changes track by $index">
+
+										<div ng-show="changedFile.score != 0">
+											Changes to
+											<code>{{changedFile.fileName}}</code>
+											<div
+												ng-repeat="(changesInFile,countInFile) in changedFile.binnedChangesCounts track by $index">
+												&nbsp;&nbsp;{{changesInFile}} -- {{countInFile}} time(s)</div>
+										</div>
+
+
+									</div>
 
 								</div>
 
@@ -422,6 +420,14 @@
 
 						</div>
 					</div>
+
+					<div class="col-md-6"
+						style="position: relative; height: 400; width: 450"
+						ng-show="chart">
+						<canvas id="myChart"></canvas>
+					</div>
+
+
 
 				</div>
 

@@ -53,11 +53,11 @@ public class AutoVCSProperties {
     }
 
     static final public String getUsername () {
-        return prop.getProperty( "username" );
+        return isEnterprise() ? prop.getProperty( "enterpriseUsername" ) : prop.getProperty( "username" );
     }
 
     static final public String getPassword () {
-        return prop.getProperty( "password" );
+        return isEnterprise() ? prop.getProperty( "enterprisePassword" ) : prop.getProperty( "password" );
     }
 
     static final public String getEmailDomain () {
@@ -73,16 +73,16 @@ public class AutoVCSProperties {
         GitHub gh;
 
         GitHubBuilder builder = null;
+        final String token = isEnterprise() ? prop.getProperty( "enterpriseToken" ) : prop.getProperty( "token" );
 
         try {
             if ( isEnterprise() ) {
 
-                builder = new GitHubBuilder().withEndpoint( getGithubAPIUrl() )
-                        .withOAuthToken( prop.getProperty( "token" ) );
+                builder = new GitHubBuilder().withEndpoint( getGithubAPIUrl() ).withOAuthToken( token );
 
             }
             else {
-                builder = new GitHubBuilder().withOAuthToken( prop.getProperty( "token" ) );
+                builder = new GitHubBuilder().withOAuthToken( token );
             }
             builder = builder
                     .withConnector( new OkHttpConnector( new OkUrlFactory( new OkHttpClient().setCache( cache ) ) ) );

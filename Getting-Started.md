@@ -12,19 +12,31 @@ There are a couple of things you have to setup before AutoVCS will work:
 
 * Configure Github Properties file.  Copy `AutoVCS/gh-template.properties` to `AutoVCS/gh.properties` and fill in the following options:
 
-*githubEnterprise*: `true`/`false` depending on whether you want to use a configured Github Enterprise site (`true`) or Github.com (`false`).  If set to `false`, your settings for `enterpriseAPI` and `enterpriseURL` are ignored.
+* `githubEnterprise`: `true`/`false` depending on whether you want to use a configured Github Enterprise site (`true`) or Github.com (`false`).  If set to `true`, fill in:
 
-*enterpriseAPI*: API URL of your Github Enterprise installation, if any.  The default API URL is `<your Github Enterprise URL>/api/v3` (for example; `https://github.ncsu.edu/api/v3`), but may be different depending on your Github Enterprise settings.  If this doesn't work, contact your Github administrators.
+    * `enterpriseAPI`: API URL of your Github Enterprise installation, if any.  The default API URL is `<your Github Enterprise URL>/api/v3` (for example; `https://github.ncsu.edu/api/v3`), but may be different depending on your Github Enterprise settings.  If this doesn't work, contact your Github administrators.
 
-*enterpriseURL*: URL of your Github Enterprise installation, such as `https://github.ncsu.edu`
+    * `enterpriseURL`: URL of your Github Enterprise installation, such as `https://github.ncsu.edu`
+  
+    * `enterpriseToken`: API token for connecting to your Github Enterprise site.
 
-*desiredEmailDomain*: AutoVCS identifies users by their `name` and `email address`.  When fetching information from the Github API, users with no known email address will have an identifying email address generated for them, according to the format `username@desiredEmailDomain`.  We suggest populating the URL of your institution (for example `ncsu.edu`), or using `gmail.com`
+    * `enterpriseUsername`: Username for connecting to your Github Enterprise site.
 
-*token*: API token for connecting to Github.com or your Github Enterprise site.
+    * `enterprisePassword`: Password for connecting to your Github Enterprise site.  This may be the same as your token.
+  
+* alternatively, if `githubEnterprise` is set to `false`, instead configure:
+  
+    * `token`: API token for connecting to Github.com
+  
+    * `username`: Username for connecting to Github.com
+  
+    * `password`: Password for connecting to Github.com.  This may be the same as your token.
 
-*username*: Username for connecting to Github.com or your Github Enterprise site.
+* If you regularly use `Github.com` and a Github Enterprise installation, you may configure all eight options and simply switch the `githubEnterprise` flag back and forth when you wish to use the other configuration.  Regardless, you must also configure:
 
-*password*: Password for connecting to Github.com or your Github Enterprise site.  This may be the same as your token.
+* `desiredEmailDomain`: AutoVCS identifies users by their `name` and `email address`.  When fetching information from the Github API, users with no known email address will have an identifying email address generated for them, according to the format `username@desiredEmailDomain`.  We suggest populating the URL of your institution (for example `ncsu.edu`), or using `gmail.com`
+
+
 
 
 ## Running AutoVCS

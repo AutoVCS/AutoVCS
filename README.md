@@ -4,7 +4,7 @@ AutoVCS is an application that presents summaries of individual developers' code
 
 
 AutoVCS is written in Java, and can present summaries for Java code contributions tracked through GitHub (either Github.com, or Github Enterprise).  AutoVCS has the following requirements:
-- Java 8+
+- Java 8+ (tested working on Java 8 and Java 11)
 - MySQL or MariaDB (tested with MariaDB 10.3 and MySQL 8.0)
 - Our [improved version](https://github.com/AutoVCS/ChangeDistiller) of ChangeDistiller [1].
 

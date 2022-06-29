@@ -3,10 +3,7 @@
 <head>
 <title>View Contribution Summaries</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<link rel="stylesheet"
-	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
-	crossorigin="anonymous" />
+
 <style>
 .top15 {
 	margin-top: 15px;
@@ -20,20 +17,24 @@
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
 	integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
 	crossorigin="anonymous"></script>
+
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+	rel="stylesheet"
+	integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+	crossorigin="anonymous">
+</link>
 <script
-	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-	integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-	crossorigin="anonymous"></script>
-<script
-	src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-	integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+	src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+	integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
 	crossorigin="anonymous"></script>
 
-<!-- Load d3.js -->
-<script src="https://d3js.org/d3.v4.js"></script>
+
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.js"></script>
 
 <body>
-	<h1>View Contribution Summaries</h1>
+	
 	<div layout:fragment="content">
 
 		<script>
@@ -50,11 +51,138 @@
 								$scope.displayContribs = true;
 
 								$scope.formatDate = function(date) {
-									return (new Date(date)).toLocaleString();
-									
+									/* date.epochSecond is seconds, convert this to milliseconds -- ignoring nanoseconds is fine */
+									return (new Date(date.epochSecond * 1000)).toLocaleString();
 								}
 								
-								$scope.allContributions = AUTOVCS_JSON_DATA;
+								$scope.format = function(value) {
+									if (value < 1)
+										return "<1";
+									return value.toFixed(2);
+								}
+								
+								$scope.jsonData = AUTOVCS_JSON_DATA;
+								
+								$scope.allContributions = $scope.jsonData.changesPerUser;
+								
+								$scope.changesPerFile = $scope.jsonData.changesPerFile;
+														
+														
+														
+								/** ------ Parse the data that is necessary to make the contributions-by-file chart ------ **/
+														
+								/* Gives a list of all files changed */
+								let changedFiles = Object.keys($scope.changesPerFile);
+														
+								/* Gives a list of all users who have done _something */
+								let users = Object.keys($scope.allContributions); 
+														
+								let contribsPerUser = Object();
+														
+								for (user of users){
+									contribsPerUser[user] = [];
+								}
+														
+														
+								for (changedFile of changedFiles){
+									let changeForFile = $scope.changesPerFile[changedFile];	
+									for (user of users){
+									    var contribToFile = 0;
+									    if (undefined != changeForFile[user]){
+									    	contribToFile = changeForFile[user];
+									    }
+									    contribsPerUser[user].push(contribToFile);
+									}
+								}
+														
+														
+														
+								const ctx = document.getElementById('myChart');
+
+
+								var barOptions_stacked = {
+								    tooltips: {
+								        enabled: false
+								    },
+								    hover :{
+								        animationDuration:0
+								    },
+								    scales: {
+								        xAxes: [{
+								            ticks: {
+								                beginAtZero:true,
+								                fontFamily: "'Open Sans Bold', sans-serif",
+								                fontSize:11
+								            },
+								            scaleLabel:{
+								                display:false
+								            },
+								            gridLines: {
+								            }, 
+								            stacked: true
+								        }],
+								        yAxes: [{
+								            gridLines: {
+								                display:false,
+								                color: "#fff",
+								                zeroLineColor: "#fff",
+								                zeroLineWidth: 0
+								            },
+								            ticks: {
+								                fontFamily: "'Open Sans Bold', sans-serif",
+								                fontSize:11
+								            },
+								            stacked: true
+								        }]
+								    },
+								    legend:{
+								        display: true,
+										position: 'bottom',
+										
+								    },
+								   
+								    pointLabelFontFamily : "Quadon Extra Bold",
+								    scaleFontFamily : "Quadon Extra Bold",
+								};
+														
+														
+								datasets = [];
+								
+								colours = ["red", "green", "blue", "yellow", "purple", "orange", "black"];
+														
+														
+								var idx = 0;
+														
+								for (const [key, value] of Object.entries(contribsPerUser)) {
+														
+									datasets.push({
+										data: value,
+										label: key,
+										backgroundColor: colours[idx],
+										hoverBackgroundColor: colours[idx]
+															
+									});
+									idx++;
+															
+															
+								}
+														
+								var myChart = new Chart(ctx, {
+								    type: 'horizontalBar',
+								    data: {
+								        labels: changedFiles,
+								        
+								        datasets: datasets
+								    },
+
+								    options: barOptions_stacked,
+								});
+														
+														
+														
+														
+								$scope.displayContribs = true;
+								
 								
 							});
 			/*]]>*/
@@ -62,99 +190,115 @@
 
 		<div ng-app="myApp" ng-controller="contributionSummaries">
 			<div class="container">
+			
+				<h1>View Contribution Summaries</h1>
 
 				<div class="row top15"></div>
 
 				<div class="row">
 
 					<div class="col-sm">
-						<input type="checkbox" ng-model="score">Display one score
-						{{submit.type}} ?</input>
+						<input type="checkbox" ng-model="chart">&nbsp;Show a chart
+						for viewing high-level contributions to individual files?</input>
 					</div>
 
 					<div class="col-sm">
-						<input type="checkbox" ng-model="summaries">Display
-						summaries {{submit.type}}?</input>
+						<input type="checkbox" ng-model="score">&nbsp;Display one
+						contributions score for each user?</input>
 					</div>
 
 					<div class="col-sm">
-						<input type="checkbox" ng-model="details">Display details
-						{{submit.type}}?</input>
+						<input type="checkbox" ng-model="summaries">&nbsp;Display
+						summaries for each user?</input>
 					</div>
 
 					<div class="col-sm">
-						<input type="checkbox" ng-model="commits">Display commits
-						for each user?</input>
+						<input type="checkbox" ng-model="details">&nbsp;Display
+						details for each user?</input>
+					</div>
+
+					<div class="col-sm">
+						<input type="checkbox" ng-model="commits">&nbsp;Display
+						commits for each user?</input>
 					</div>
 
 				</div>
 
 
-				<div class="top15" id="commits" ng-show="displayContribs">
+				<div class="row flex-column-reverse flex-md-row top15" id="commits"
+					ng-show="displayContribs">
 					<h3>Contributions Data</h3>
-					<div class="row top15"
-						ng-repeat="(commitOrUser, contributions) in allContributions track by $index">
+
+					<div class="col-md-6">
+
+						<div class="row top15"
+							ng-repeat="(commitOrUser, contributions) in allContributions track by $index">
 
 
-						<div class="top15">
+							<div class="top15">
 
-							<div ng-show="score">
-								<strong>{{commitOrUser}} -- Contribution Score:
-									{{contributions.contributionsScore}}</strong>
-							</div>
-							<div ng-show="score">
-								<i>Percentage contribution to team:
-									{{contributions.contributionsScorePercent}}%</i>
-							</div>
-
-
-							<div ng-hide="score">
-								<strong>{{commitOrUser}}</strong>
-							</div>
-
-
-
-							<div class="col-sm" ng-show="summaries"
-								ng-repeat="(contribution, count) in contributions.binnedChangesCounts track by $index">
-								{{contribution}} -- {{count}} time(s)</div>
-
-
-
-							<div class="col-sm" ng-show="commits">
-								<strong>Commits</strong>
-								<div ng-repeat="commit in contributions.commits track by $index">
-
-									<div ng-show="$index === 0">
-										<strong><code>{{commit.commitMessage}}</code>
-											({{formatDate(commit.date)}}) <a href="{{commit.url}}"><i
-												class="fas fa-external-link-square-alt"></i></a></strong>
-									</div>
-
-
-									<div ng-show="$index != 0">
-										<code>{{commit.commitMessage}}</code>
-										({{formatDate(commit.date)}}) <a href="{{commit.url}}"><i
-											class="fas fa-external-link-square-alt"></i></a>
-									</div>
-
+								<div ng-show="score">
+									<strong>{{commitOrUser}} -- Contribution Score:
+										{{contributions.contributionsScore}}</strong>
 								</div>
-							</div>
+								<div ng-show="score">
+									<i>Percentage contribution to team:
+										{{format(contributions.contributionsScorePercent)}}%</i>
+								</div>
+
+
+								<div ng-hide="score">
+									<strong>{{commitOrUser}}</strong>
+								</div>
 
 
 
-							<div class="col-sm" ng-show="details">
-								<strong>Detailed Changes</strong>
-								<div
-									ng-repeat="changedFile in contributions.changes track by $index">
+								<div class="col-sm" ng-show="summaries"
+									ng-repeat="(contribution, count) in contributions.binnedChangesCounts track by $index">
+									{{contribution}} -- {{count}} time(s)</div>
 
-									<div ng-show="changedFile.score != 0">
-										Changes to
-										<code>{{changedFile.fileName}}</code>
-										<div
-											ng-repeat="(changesInFile,countInFile) in changedFile.binnedChangesCounts track by $index">
-											&nbsp;&nbsp;{{changesInFile}} -- {{countInFile}} time(s)</div>
+
+
+								<div class="col-sm" ng-show="commits">
+									<strong>Commits</strong>
+									<div
+										ng-repeat="commit in contributions.commits track by $index">
+
+										<div ng-show="$index === 0">
+											<strong><code>{{commit.commitMessage}}</code>
+												({{formatDate(commit.date)}}) <a href="{{commit.url}}"
+												target="_blank"><i
+													class="fas fa-external-link-square-alt"></i></a></strong>
+										</div>
+
+
+										<div ng-show="$index != 0">
+											<code>{{commit.commitMessage}}</code>
+											({{formatDate(commit.date)}}) <a href="{{commit.url}}"
+												target="_blank"><i
+												class="fas fa-external-link-square-alt"></i></a>
+										</div>
+
 									</div>
+								</div>
 
+
+
+								<div class="col-sm" ng-show="details">
+									<strong>Detailed Changes</strong>
+									<div
+										ng-repeat="changedFile in contributions.changes track by $index">
+
+										<div ng-show="changedFile.score != 0">
+											Changes to
+											<code>{{changedFile.fileName}}</code>
+											<div
+												ng-repeat="(changesInFile,countInFile) in changedFile.binnedChangesCounts track by $index">
+												&nbsp;&nbsp;{{changesInFile}} -- {{countInFile}} time(s)</div>
+										</div>
+
+
+									</div>
 
 								</div>
 
@@ -162,6 +306,14 @@
 
 						</div>
 					</div>
+
+					<div class="col-md-6"
+						style="position: relative; height: 400; width: 450"
+						ng-show="chart">
+						<canvas id="myChart"></canvas>
+					</div>
+
+
 
 				</div>
 

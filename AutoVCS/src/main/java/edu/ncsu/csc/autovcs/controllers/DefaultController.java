@@ -12,37 +12,22 @@ public class DefaultController {
         return "/index";
     }
 
-    @GetMapping ( "populateData" )
+    @GetMapping ( { "populateData", "populateData.html" } )
     public String getPopulateData ( final Model model ) {
         return "/populateData";
     }
 
-    @GetMapping ( "viewCommitCharts" )
-    public String getCharts ( final Model model ) {
-        return "viewCommitCharts";
-    }
-
-    @GetMapping ( "remapUsers" )
+    @GetMapping ( { "remapUsers", "remapUsers.html" } )
     public String getRemapUsers ( final Model model ) {
         return "remapUsers";
     }
 
-    @GetMapping ( "userView" )
-    public String getUserView ( final Model model ) {
-        return "userView";
-    }
-
-    @GetMapping ( "viewTeamNetwork" )
-    public String getTeamNetwork ( final Model model ) {
-        return "viewTeamNetwork";
-    }
-
-    @GetMapping ( "viewContributions" )
+    @GetMapping ( { "viewContributions", "viewContributions.html" } )
     public String getContributions ( final Model model ) {
         return "viewContributions";
     }
 
-    @GetMapping ( "manageExcludedUsers" )
+    @GetMapping ( { "manageExcludedUsers", "manageExcludedUsers.html" } )
     public String getManageExcludedUsers ( final Model model ) {
         return "manageExcludedUsers";
     }

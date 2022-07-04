@@ -21,6 +21,7 @@ import org.apache.commons.cli.ParseException;
 import org.kohsuke.github.GHOrganization;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.gson.Gson;
 
@@ -30,11 +31,16 @@ import edu.ncsu.csc.autovcs.services.ContributionAnalysisService;
 
 public class BatchRunner {
 
-    static private final List<String>        successfulRepositories = new Vector<String>();
+    private final String[]              args;
 
-    static private final Map<String, String> failedRepositories     = new ConcurrentHashMap<String, String>();
+    private final List<String>          successfulRepositories = new Vector<String>();
 
-    private static final Gson                gson                   = new Gson();
+    private final Map<String, String>   failedRepositories     = new ConcurrentHashMap<String, String>();
+
+    private static final Gson           gson                   = new Gson();
+
+    @Autowired
+    private ContributionAnalysisService cas;
 
     /**
      *
@@ -44,7 +50,17 @@ public class BatchRunner {
      *            https://github.com/AutoVCS/AutoVCS/blob/main/Getting-Started.md#batch-mode
      */
     public static void main ( final String[] args ) throws Exception {
+        new BatchRunner( args ).run();
 
+        System.exit( 0 );
+
+    }
+
+    private BatchRunner ( final String[] args ) {
+        this.args = args;
+    }
+
+    private void run () throws Exception {
         final CommandLine line = parseOptions( args );
         final Path configurationFile = Path.of( getConfigurationFile( line ) );
         final Path templateFile = Path.of( getTemplateFile( line ) );
@@ -163,12 +179,9 @@ public class BatchRunner {
             System.out.println( "##########################################################" );
 
         }
-
-        System.exit( 0 );
-
     }
 
-    static private class RunnerWorker implements Runnable {
+    private class RunnerWorker implements Runnable {
 
         private final ContributionsSummaryForm csf;
         private final String                   template;
@@ -193,7 +206,7 @@ public class BatchRunner {
         }
 
         private void analyseAndWrite () throws Exception {
-            final String data = ContributionAnalysisService.getContributionSummaries( csf );
+            final String data = cas.getContributionSummaries( csf );
 
             final String builtPage = template.replace( "AUTOVCS_JSON_DATA", data );
 

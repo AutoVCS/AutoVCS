@@ -9,12 +9,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.sql.DataSource;
+import javax.transaction.Transactional;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -23,14 +26,18 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import edu.ncsu.csc.autovcs.DBUtils;
+import edu.ncsu.csc.autovcs.TestConfig;
 import edu.ncsu.csc.autovcs.TestUtils;
 import edu.ncsu.csc.autovcs.models.persistent.GHCommit;
 import edu.ncsu.csc.autovcs.models.persistent.GHRepository;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
+import edu.ncsu.csc.autovcs.services.GHCommitService;
+import edu.ncsu.csc.autovcs.services.GHRepositoryService;
+import edu.ncsu.csc.autovcs.services.GitUserService;
 
 @RunWith ( SpringRunner.class )
-@SpringBootTest
-@AutoConfigureMockMvc
+@EnableAutoConfiguration
+@SpringBootTest ( classes = TestConfig.class )
 public class APIUserTest {
 
     private static final String   API_TEST_USER  = "ApiTestUser";
@@ -41,16 +48,29 @@ public class APIUserTest {
     @Autowired
     private WebApplicationContext context;
 
+    @Autowired
+    private GitUserService        userService;
+
+    @Autowired
+    private GHRepositoryService   repositoryService;
+
+    @Autowired
+    private GHCommitService       commitService;
+
+    @Autowired
+    private DataSource            ds;
+
     @Before
     public void setup () {
         mvc = MockMvcBuilders.webAppContextSetup( context ).build();
 
-        DBUtils.resetDB();
+        DBUtils.resetDB( ds );
     }
 
     @Test
+    @Transactional
     public void testCreateUser () throws Exception {
-        Assert.assertEquals( 0, GitUser.getAll().size() );
+        Assert.assertEquals( 0, userService.findAll().size() );
 
         final GitUser user = new GitUser();
         user.setName( API_TEST_USER );
@@ -59,13 +79,14 @@ public class APIUserTest {
         mvc.perform( post( "/api/v1/users" ).contentType( MediaType.APPLICATION_JSON )
                 .content( TestUtils.asJsonString( user ) ) ).andExpect( status().isCreated() );
 
-        Assert.assertEquals( 1, GitUser.getAll().size() );
+        Assert.assertEquals( 1, userService.findAll().size() );
 
     }
 
     @Test
+    @Transactional
     public void testExcludedUsers () throws Exception {
-        Assert.assertEquals( 0, GitUser.getAll().size() );
+        Assert.assertEquals( 0, userService.findAll().size() );
         createUsers( 5, true );
         createUsers( 7, false );
 
@@ -87,17 +108,18 @@ public class APIUserTest {
     }
 
     @Test
+    @Transactional
     public void testIncludeExcludeUsers () throws Exception {
-        Assert.assertEquals( 0, GitUser.getAll().size() );
+        Assert.assertEquals( 0, userService.findAll().size() );
 
         final GitUser user = new GitUser();
         user.setName( API_TEST_USER );
         user.setEmail( API_TEST_EMAIL );
         user.setExcluded( true );
 
-        user.save();
+        userService.save( user );
 
-        List<GitUser> excluded = GitUser.getExcluded();
+        List<GitUser> excluded = userService.findExcluded();
 
         Assert.assertEquals( 1, excluded.size() );
 
@@ -114,26 +136,27 @@ public class APIUserTest {
 
         /* make sure the user we included has the right status */
 
-        excluded = GitUser.getExcluded();
+        excluded = userService.findExcluded();
 
         Assert.assertEquals( 0, excluded.size() );
 
         /* & that the user still exists */
 
-        Assert.assertEquals( 1, GitUser.getAll().size() );
+        Assert.assertEquals( 1, userService.findAll().size() );
 
         /* try excluding them again */
         mvc.perform( post( String.format( "/api/v1/users/%d/exclude", id ) ).contentType( MediaType.APPLICATION_JSON ) )
                 .andExpect( status().isOk() );
 
-        excluded = GitUser.getExcluded();
+        excluded = userService.findExcluded();
 
         Assert.assertEquals( 1, excluded.size() );
-        Assert.assertEquals( 1, GitUser.getAll().size() );
+        Assert.assertEquals( 1, userService.findAll().size() );
 
     }
 
     @Test
+    @Transactional
     public void testIncludeExcludeSearch () throws Exception {
         createUsers( 10, false );
 
@@ -186,25 +209,26 @@ public class APIUserTest {
         mvc.perform( post( String.format( "/api/v1/users/%s/name/exclude", API_TEST_USER + "0" ) )
                 .contentType( MediaType.APPLICATION_JSON ) ).andExpect( status().isOk() );
 
-        List<GitUser> excluded = GitUser.getExcluded();
+        List<GitUser> excluded = userService.findExcluded();
 
         Assert.assertEquals( 1, excluded.size() );
 
-        Assert.assertEquals( 10, GitUser.getAll().size() );
+        Assert.assertEquals( 10, userService.findAll().size() );
 
         /* If we exclude by the common email, everyone should be excluded now */
         mvc.perform( post( String.format( "/api/v1/users/%s/both/exclude", API_TEST_EMAIL ) )
                 .contentType( MediaType.APPLICATION_JSON ) ).andExpect( status().isOk() );
 
-        excluded = GitUser.getExcluded();
+        excluded = userService.findExcluded();
 
         Assert.assertEquals( 10, excluded.size() );
 
-        Assert.assertEquals( 10, GitUser.getAll().size() );
+        Assert.assertEquals( 10, userService.findAll().size() );
 
     }
 
     @Test
+    @Transactional
     public void testRemapUsers () throws Exception {
         /*
          * tl;dr is we want to collapse commits for all users down into a single
@@ -214,13 +238,13 @@ public class APIUserTest {
         final GHRepository repo = new GHRepository();
         repo.setRepositoryName( "TestRepo" );
         repo.setOrganisationName( "TestOrganisation" );
-        repo.save();
+        repositoryService.save( repo );
 
         for ( int i = 0; i < 20; i++ ) {
             final GitUser user = new GitUser();
             user.setName( API_TEST_USER + i );
             user.setEmail( API_TEST_EMAIL );
-            user.save();
+            userService.save( user );
 
             final GHCommit commit = new GHCommit();
             commit.setCommitDate( Instant.now() );
@@ -232,17 +256,17 @@ public class APIUserTest {
 
         }
 
-        repo.save();
+        repositoryService.save( repo );
 
-        Assert.assertEquals( 20, GHCommit.getAll().size() );
+        Assert.assertEquals( 20, commitService.findAll().size() );
 
-        final List<GitUser> allUsers = GitUser.getAll();
+        final List<GitUser> allUsers = userService.findAll();
 
         Assert.assertEquals( 20, allUsers.size() );
 
         final GitUser targetUser = allUsers.get( 0 );
 
-        final List<GHCommit> originalCommitsForUser = GHCommit.getForUser( targetUser );
+        final List<GHCommit> originalCommitsForUser = commitService.findByUser( targetUser );
 
         Assert.assertEquals( 1, originalCommitsForUser.size() );
 
@@ -258,7 +282,7 @@ public class APIUserTest {
                 .content( TestUtils.asJsonString( remappingOptions ) ) ).andExpect( status().isOk() );
 
         /* Single user should "own" all commits now */
-        final List<GHCommit> remappedCommits = GHCommit.getForUser( targetUser );
+        final List<GHCommit> remappedCommits = commitService.findByUser( targetUser );
         Assert.assertEquals( 20, remappedCommits.size() );
     }
 
@@ -268,7 +292,7 @@ public class APIUserTest {
             user.setName( API_TEST_USER + i );
             user.setEmail( API_TEST_EMAIL );
             user.setExcluded( excluded );
-            user.save();
+            userService.save( user );
         }
     }
 

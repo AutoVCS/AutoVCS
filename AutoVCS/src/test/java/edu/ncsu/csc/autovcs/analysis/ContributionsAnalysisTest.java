@@ -2,27 +2,48 @@ package edu.ncsu.csc.autovcs.analysis;
 
 import java.util.Map;
 
+import javax.sql.DataSource;
+import javax.transaction.Transactional;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import ch.uzh.ifi.seal.changedistiller.api.ChangeSummary;
 import ch.uzh.ifi.seal.changedistiller.model.classifiers.java.JavaEntityType;
 import edu.ncsu.csc.autovcs.DBUtils;
+import edu.ncsu.csc.autovcs.TestConfig;
 import edu.ncsu.csc.autovcs.forms.ContributionsSummaryForm;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
 import edu.ncsu.csc.autovcs.services.ContributionAnalysisService;
 import edu.ncsu.csc.autovcs.services.ContributionAnalysisService.ChangeSummariesList;
+import edu.ncsu.csc.autovcs.services.GitUserService;
 
+@RunWith ( SpringRunner.class )
+@EnableAutoConfiguration
+@SpringBootTest ( classes = TestConfig.class )
 public class ContributionsAnalysisTest {
 
-    private static final String ORG = "AutoVCS";
-    private static final String CM  = "AutoVCS-CoffeeMaker";
-    private static final String TU  = "AutoVCS-MultiUserProject";
+    @Autowired
+    private ContributionAnalysisService cas;
+    @Autowired
+    private GitUserService              userService;
+
+    @Autowired
+    private DataSource                  ds;
+
+    private static final String         ORG = "AutoVCS";
+    private static final String         CM  = "AutoVCS-CoffeeMaker";
+    private static final String         TU  = "AutoVCS-MultiUserProject";
 
     @Before
     public void setup () {
-        DBUtils.resetDB();
+        DBUtils.resetDB( ds );
     }
 
     /**
@@ -31,6 +52,7 @@ public class ContributionsAnalysisTest {
      * OK!
      */
     @Test
+    @Transactional
     public void testFullAnalysis () {
 
         final ContributionsSummaryForm csf = new ContributionsSummaryForm();
@@ -41,8 +63,7 @@ public class ContributionsAnalysisTest {
         csf.setExcludeGUI( true );
         csf.setType( "BY_USER" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
-                .getChangesPerUser();
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = cas.aggregateByUser( csf ).getChangesPerUser();
 
         /*
          * Only one user should show up here, b/c other users have only made
@@ -50,13 +71,14 @@ public class ContributionsAnalysisTest {
          */
         Assert.assertEquals( 1, aggregatedChanges.size() );
 
-        final GitUser kai = GitUser.getByEmailContaining( "kpresle@ncsu.edu" ).get( 0 );
+        final GitUser kai = userService.findByEmailContaining( "kpresle@ncsu.edu" ).get( 0 );
         final ChangeSummariesList kaiContributions = aggregatedChanges.get( kai );
         Assert.assertEquals( 14232, (int) kaiContributions.getContributionsScore() );
 
     }
 
     @Test
+    @Transactional
     public void testFullAnalysisTimeWindow () {
         final ContributionsSummaryForm csf = new ContributionsSummaryForm();
 
@@ -69,15 +91,15 @@ public class ContributionsAnalysisTest {
         csf.setStartDate( "2021-08-09T00:00:00Z" );
         csf.setEndDate( "2021-08-11T00:00:00Z" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
-                .getChangesPerUser();
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = cas.aggregateByUser( csf ).getChangesPerUser();
 
-        final GitUser kai = GitUser.getByEmailContaining( "kpresle@ncsu.edu" ).get( 0 );
+        final GitUser kai = userService.findByEmailContaining( "kpresle@ncsu.edu" ).get( 0 );
         final ChangeSummariesList kaiContributions = aggregatedChanges.get( kai );
         Assert.assertEquals( 2165, (int) kaiContributions.getContributionsScore() );
     }
 
     @Test
+    @Transactional
     public void testAnalysisMultipleUsers () {
 
         final ContributionsSummaryForm csf = new ContributionsSummaryForm();
@@ -88,8 +110,7 @@ public class ContributionsAnalysisTest {
         csf.setExcludeGUI( true );
         csf.setType( "BY_USER" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
-                .getChangesPerUser();
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = cas.aggregateByUser( csf ).getChangesPerUser();
 
         /* Two users on the project, both should show up */
         Assert.assertEquals( 2, aggregatedChanges.size() );
@@ -98,8 +119,8 @@ public class ContributionsAnalysisTest {
          * Both users should have been created during the analysis...if not,
          * fail
          */
-        final GitUser a = GitUser.getByNameContaining( "User A" ).get( 0 );
-        final GitUser b = GitUser.getByNameContaining( "User B" ).get( 0 );
+        final GitUser a = userService.findByNameContaining( "User A" ).get( 0 );
+        final GitUser b = userService.findByNameContaining( "User B" ).get( 0 );
 
         Assert.assertNotNull( a );
         Assert.assertNotNull( b );
@@ -208,6 +229,7 @@ public class ContributionsAnalysisTest {
     }
 
     @Test
+    @Transactional
     public void testContributionsAnalysisMultipleUsersOneExcluded () {
 
         /*
@@ -222,7 +244,7 @@ public class ContributionsAnalysisTest {
         userB.setEmail( "UserB@domain.com" );
         userB.setName( "User B" );
         userB.setExcluded( true );
-        userB.save();
+        userService.save( userB );
 
         final ContributionsSummaryForm csf = new ContributionsSummaryForm();
 
@@ -232,8 +254,7 @@ public class ContributionsAnalysisTest {
         csf.setExcludeGUI( true );
         csf.setType( "BY_USER" );
 
-        final Map<GitUser, ChangeSummariesList> aggregatedChanges = ContributionAnalysisService.aggregateByUser( csf )
-                .getChangesPerUser();
+        final Map<GitUser, ChangeSummariesList> aggregatedChanges = cas.aggregateByUser( csf ).getChangesPerUser();
 
         /* Two users on the project, both should show up */
         Assert.assertEquals( 1, aggregatedChanges.size() );
@@ -242,7 +263,7 @@ public class ContributionsAnalysisTest {
          * Both users should have been created during the analysis...if not,
          * fail
          */
-        final GitUser a = GitUser.getByNameContaining( "User A" ).get( 0 );
+        final GitUser a = userService.findByNameContaining( "User A" ).get( 0 );
 
         Assert.assertNotNull( a );
 

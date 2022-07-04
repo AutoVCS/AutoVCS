@@ -21,7 +21,11 @@ import org.apache.commons.cli.ParseException;
 import org.kohsuke.github.GHOrganization;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
 
 import com.google.gson.Gson;
 
@@ -29,38 +33,34 @@ import edu.ncsu.csc.autovcs.AutoVCSProperties;
 import edu.ncsu.csc.autovcs.forms.ContributionsSummaryForm;
 import edu.ncsu.csc.autovcs.services.ContributionAnalysisService;
 
+@ComponentScan ( "edu.ncsu.csc.autovcs" )
+@SpringBootApplication
 public class BatchRunner {
 
-    private final String[]              args;
+    static private final List<String>          successfulRepositories = new Vector<String>();
 
-    private final List<String>          successfulRepositories = new Vector<String>();
+    static private final Map<String, String>   failedRepositories     = new ConcurrentHashMap<String, String>();
 
-    private final Map<String, String>   failedRepositories     = new ConcurrentHashMap<String, String>();
+    private static final Gson                  gson                   = new Gson();
 
-    private static final Gson           gson                   = new Gson();
+    static private ContributionAnalysisService cas;
 
-    @Autowired
-    private ContributionAnalysisService cas;
-
-    /**
-     *
-     * @param args
-     *            Batch mode supports five run parameters, as described in the
-     *            documentation on our Github Repository:
-     *            https://github.com/AutoVCS/AutoVCS/blob/main/Getting-Started.md#batch-mode
-     */
     public static void main ( final String[] args ) throws Exception {
-        new BatchRunner( args ).run();
+        /* Don't launch Tomcat: https://stackoverflow.com/a/44394305 */
+        final ConfigurableApplicationContext ctx = new SpringApplicationBuilder( BatchRunner.class )
+                .web( WebApplicationType.NONE ).run( args );
+        /* Service lookup: https://stackoverflow.com/questions/46617044/how-to-use-autowired-autowired-references-from-mainstring-args-method */
+        cas = ctx.getBean( ContributionAnalysisService.class );
+
+
+        run( args );
 
         System.exit( 0 );
 
     }
 
-    private BatchRunner ( final String[] args ) {
-        this.args = args;
-    }
+    static public void run ( final String... args ) throws Exception {
 
-    private void run () throws Exception {
         final CommandLine line = parseOptions( args );
         final Path configurationFile = Path.of( getConfigurationFile( line ) );
         final Path templateFile = Path.of( getTemplateFile( line ) );
@@ -181,7 +181,7 @@ public class BatchRunner {
         }
     }
 
-    private class RunnerWorker implements Runnable {
+    static private class RunnerWorker implements Runnable {
 
         private final ContributionsSummaryForm csf;
         private final String                   template;
@@ -200,6 +200,7 @@ public class BatchRunner {
                 successfulRepositories.add( name );
             }
             catch ( final Exception e ) {
+                e.printStackTrace();
                 failedRepositories.put( name, e.getMessage() );
             }
 

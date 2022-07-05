@@ -135,3 +135,36 @@ You can pass multiple repository matchers to the `repositories` field, and can u
 ```
 
 
+
+## Oddities
+
+
+We've observed that many students enjoy writing code that features emojis, particularly in comments.  Unfortunately, these four-byte UTF8 characters [are not supported by default in MySQL/MariaDB](https://stackoverflow.com/a/10959780).
+
+If you get errors such as:
+
+```
+com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Incorrect string value: '\xF0\x9F\x92\xA1 T...' for column `autovcs`.`ghfile`.`changes` at row 1
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:104) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeInternal(ClientPreparedStatement.java:916) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeUpdateInternal(ClientPreparedStatement.java:1061) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeUpdateInternal(ClientPreparedStatement.java:1009) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeLargeUpdate(ClientPreparedStatement.java:1320) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+```
+
+you'll need to modify your MariaDB/MySQL settings to enable support.  Locate your `my.cnf`/`my.ini` (location depends on your operating system; consult documentation for your OS to find the specific location) and make the following additions:
+
+```
+[client] 
+default-character-set = utf8mb4 
+[mysql] 
+default-character-set = utf8mb4 
+[mysqld] 
+character-set-client-handshake = FALSE 
+character-set-server = utf8mb4 
+collation-server = utf8mb4_unicode_ci 
+init_connect='SET NAMES utf8mb4'
+```
+
+On MariaDB 10.8 on Windows 10, none of these options are configured by default, so we added them to the configuration.  If other options *are* set, then modify them instead.  Restart MariaDB/MYSQL to make the changes take effect; you can confirm by running the command `SHOW VARIABLES WHERE Variable_name LIKE 'character\_set\_%' OR Variable_name LIKE 'collation%';` from a database client.
+

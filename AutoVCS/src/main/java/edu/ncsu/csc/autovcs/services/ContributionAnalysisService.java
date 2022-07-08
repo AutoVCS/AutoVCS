@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import ch.uzh.ifi.seal.changedistiller.api.ChangeExtractor;
 import ch.uzh.ifi.seal.changedistiller.api.ChangeSummary;
@@ -411,6 +412,7 @@ public class ContributionAnalysisService {
     static private String write ( final Object what ) {
         try {
             final ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule( new JavaTimeModule() );
             final SimpleModule module = new SimpleModule( "SourceCodeChangeSerialiser",
                     new Version( 1, 0, 0, null, null, null ) );
             module.addSerializer( SourceCodeChange.class, new SourceCodeChangeSerialiser() );

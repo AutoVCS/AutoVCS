@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import edu.ncsu.csc.autovcs.DBUtils;
@@ -25,6 +26,7 @@ import edu.ncsu.csc.autovcs.services.GHRepositoryService;
 @RunWith ( SpringRunner.class )
 @EnableAutoConfiguration
 @SpringBootTest ( classes = TestConfig.class )
+@ActiveProfiles ( { "test" } )
 public class PopulateDataTest {
 
     /** Github org for project; test data lives here */

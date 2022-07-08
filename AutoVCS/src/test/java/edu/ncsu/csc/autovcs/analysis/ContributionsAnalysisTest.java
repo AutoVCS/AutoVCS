@@ -12,6 +12,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import ch.uzh.ifi.seal.changedistiller.api.ChangeSummary;
@@ -27,6 +28,7 @@ import edu.ncsu.csc.autovcs.services.GitUserService;
 @RunWith ( SpringRunner.class )
 @EnableAutoConfiguration
 @SpringBootTest ( classes = TestConfig.class )
+@ActiveProfiles ( { "test" } )
 public class ContributionsAnalysisTest {
 
     @Autowired

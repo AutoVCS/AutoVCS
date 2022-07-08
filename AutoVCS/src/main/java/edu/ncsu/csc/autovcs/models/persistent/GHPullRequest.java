@@ -1,13 +1,9 @@
 package edu.ncsu.csc.autovcs.models.persistent;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -18,126 +14,44 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
-import org.kohsuke.github.GHIssueComment;
-import org.kohsuke.github.GHPullRequestReviewComment;
-
 @Entity
-@Table ( name = "GHPullRequests" )
-public class GHPullRequest extends DomainObject<GHPullRequest> {
-
-    private static DomainObjectCache<Long, GHPullRequest> cache = new DomainObjectCache<Long, GHPullRequest>(
-            GHPullRequest.class );
+public class GHPullRequest extends DomainObject {
 
     @Id
     @GeneratedValue ( strategy = GenerationType.IDENTITY )
-    private Long                                          id;
+    private Long           id;
 
     @ManyToOne
     @NotNull
-    private GHRepository                                  repository;
+    private GHRepository   repository;
 
     @OneToMany ( cascade = CascadeType.ALL, fetch = FetchType.EAGER )
-    private Set<GHComment>                                pullRequestComments;
+    private Set<GHComment> pullRequestComments;
 
-    private Instant                                       openedAt;
+    private Instant        openedAt;
 
-    private Instant                                       closedAt;
+    private Instant        closedAt;
 
-    private int                                           number;
-
-    @ManyToOne
-    private GitUser                                       mergedBy;
+    private int            number;
 
     @ManyToOne
-    private GitUser                                       openedBy;
+    private GitUser        mergedBy;
+
+    @ManyToOne
+    private GitUser        openedBy;
 
     @Column ( columnDefinition = "text" )
-    private String                                        title;
+    private String         title;
 
     @Column ( columnDefinition = "text" )
-    private String                                        body;
+    private String         body;
 
-    private String                                        url;
+    private String         url;
 
     /** For Hibernate */
     public GHPullRequest () {
-    }
-
-    public GHPullRequest ( final org.kohsuke.github.GHPullRequest request ) {
-
-        repository = GHRepository.forRepository( request.getRepository() );
-        this.number = request.getNumber();
-
-        try {
-            openedAt = request.getCreatedAt().toInstant();
-        }
-        catch ( final IOException e ) {
-            throw new RuntimeException( e );
-        }
-        try {
-            closedAt = request.getClosedAt().toInstant();
-        }
-        catch ( final Exception e ) {
-            // might not be closed, carry on
-        }
-
-        List<GHIssueComment> comments = null;
-        try {
-            comments = request.listComments().asList();
-        }
-        catch ( final IOException e ) {
-        }
-
-        List<GHPullRequestReviewComment> reviewComments = null;
-        try {
-            reviewComments = request.listReviewComments().asList();
-        }
-        catch ( final IOException e ) {
-        }
-
-        pullRequestComments = new HashSet<GHComment>();
-        if ( null != comments ) {
-            pullRequestComments.addAll( comments.stream().map( GHComment::new ).collect( Collectors.toSet() ) );
-        }
-        if ( null != reviewComments ) {
-            pullRequestComments.addAll( reviewComments.stream().map( GHComment::new ).collect( Collectors.toSet() ) );
-        }
-        try {
-            mergedBy = GitUser.forUser( request.getMergedBy() );
-        }
-        catch ( final Exception e ) {
-            // maybe not merged
-        }
-        try {
-            openedBy = GitUser.forUser( request.getUser() );
-        }
-        catch ( final Exception e ) {
-            throw new RuntimeException( e );
-        }
-
-        this.title = request.getTitle();
-
-        this.body = request.getBody();
-
-        this.url = request.getHtmlUrl().toString();
-    }
-
-    @SuppressWarnings ( "unchecked" )
-    public static List<GHPullRequest> getByRepository ( final GHRepository repository ) {
-        return (List<GHPullRequest>) getWhere( GHPullRequest.class, eqList( "repository", repository ) );
-    }
-
-    @SuppressWarnings ( "unchecked" )
-    public static List<GHPullRequest> getOpenedBy ( final GitUser user ) {
-        return (List<GHPullRequest>) getWhere( GHPullRequest.class, eqList( "openedBy", user ) );
-    }
-
-    @SuppressWarnings ( "unchecked" )
-    public static List<GHPullRequest> getMergedBy ( final GitUser user ) {
-        return (List<GHPullRequest>) getWhere( GHPullRequest.class, eqList( "mergedBy", user ) );
     }
 
     public GHRepository getRepository () {
@@ -181,11 +95,6 @@ public class GHPullRequest extends DomainObject<GHPullRequest> {
         return id;
     }
 
-    @Override
-    protected Serializable getKey () {
-        return getId();
-    }
-
     public int getNumber () {
         return number;
     }
@@ -220,6 +129,18 @@ public class GHPullRequest extends DomainObject<GHPullRequest> {
 
     public String getBody () {
         return body;
+    }
+
+    public void setTitle ( final String title ) {
+        this.title = title;
+    }
+
+    public void setBody ( final String body ) {
+        this.body = body;
+    }
+
+    public void setUrl ( final String url ) {
+        this.url = url;
     }
 
     @Override

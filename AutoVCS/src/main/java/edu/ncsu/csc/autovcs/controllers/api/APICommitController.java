@@ -2,6 +2,7 @@ package edu.ncsu.csc.autovcs.controllers.api;
 
 import java.util.NoSuchElementException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,11 +16,14 @@ import edu.ncsu.csc.autovcs.services.ContributionAnalysisService;
 @SuppressWarnings ( { "rawtypes", "unchecked" } )
 public class APICommitController extends APIController {
 
+    @Autowired
+    private ContributionAnalysisService cas;
+
     @PostMapping ( BASE_PATH + "contributions" )
     public ResponseEntity extractContributions ( @RequestBody final ContributionsSummaryForm form ) {
 
         try {
-            final String response = ContributionAnalysisService.getContributionSummaries( form );
+            final String response = cas.getContributionSummaries( form );
             return new ResponseEntity( response, HttpStatus.OK );
         }
         catch ( final NoSuchElementException nsee ) {

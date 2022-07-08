@@ -20,10 +20,13 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import ch.uzh.ifi.seal.changedistiller.api.ChangeExtractor;
 import ch.uzh.ifi.seal.changedistiller.api.ChangeSummary;
@@ -35,18 +38,30 @@ import edu.ncsu.csc.autovcs.forms.ContributionsSummaryForm;
 import edu.ncsu.csc.autovcs.forms.PopulateDataForm;
 import edu.ncsu.csc.autovcs.models.persistent.GHCommit;
 import edu.ncsu.csc.autovcs.models.persistent.GHCommit.DisplayCommit;
-import edu.ncsu.csc.autovcs.models.persistent.GHFile;
 import edu.ncsu.csc.autovcs.models.persistent.GHRepository;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
 
+@Component
 public class ContributionAnalysisService {
 
-    static public String getContributionSummaries ( final ContributionsSummaryForm form ) throws Exception {
+    @Autowired
+    private GHRepositoryService     repositoryService;
+
+    @Autowired
+    private GHCommitService         commitService;
+
+    @Autowired
+    private GHFileService           fileService;
+
+    @Autowired
+    private APIRepositoryController apiCtrl;
+
+    public String getContributionSummaries ( final ContributionsSummaryForm form ) throws Exception {
         return write( aggregateByUser( form ) );
 
     }
 
-    static public ContributionsSummariesAPIData aggregateByUser ( final ContributionsSummaryForm csf ) {
+    public ContributionsSummariesAPIData aggregateByUser ( final ContributionsSummaryForm csf ) {
 
         final ContributionsSummaries summaries = createUnaggregatedDiffs( csf );
 
@@ -159,11 +174,11 @@ public class ContributionAnalysisService {
         return new ContributionsSummariesAPIData( changes, percentageContributionPerFile );
     }
 
-    private static ContributionsSummaries createUnaggregatedDiffs ( final ContributionsSummaryForm form ) {
+    private ContributionsSummaries createUnaggregatedDiffs ( final ContributionsSummaryForm form ) {
         final String repo = form.getRepository();
         final String organisation = form.getOrganisation();
 
-        GHRepository repository = GHRepository.getByNameAndOrganisation( repo, organisation );
+        GHRepository repository = repositoryService.findByNameAndOrganisation( repo, organisation );
 
         if ( null == repository && !form.isInitialiseUnknown() ) {
             throw new NoSuchElementException( "Repository not found" );
@@ -177,12 +192,12 @@ public class ContributionAnalysisService {
             pdf.setRepository( repo );
             pdf.setOrganisation( organisation );
             pdf.setCommit( true );
-            ( new APIRepositoryController() ).populateRepositories( pdf );
-            repository = GHRepository.getByNameAndOrganisation( repo, organisation );
+            apiCtrl.populateRepositories( pdf );
+            repository = repositoryService.findByNameAndOrganisation( repo, organisation );
 
         }
 
-        final List<GHCommit> commits = GHCommit.getByRepository( repository );
+        final List<GHCommit> commits = commitService.findByRepository( repository );
 
         if ( null == commits ) {
             throw new NoSuchElementException( "No commits found" );
@@ -327,7 +342,7 @@ public class ContributionAnalysisService {
 
             final List<ChangeSummary> changesForCommit = new ArrayList<ChangeSummary>();
 
-            GHFile.getByCommit( commit ).forEach( file -> {
+            fileService.findByCommit( commit ).forEach( file -> {
 
                 final String fileName = file.getFilename();
 
@@ -397,6 +412,7 @@ public class ContributionAnalysisService {
     static private String write ( final Object what ) {
         try {
             final ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule( new JavaTimeModule() );
             final SimpleModule module = new SimpleModule( "SourceCodeChangeSerialiser",
                     new Version( 1, 0, 0, null, null, null ) );
             module.addSerializer( SourceCodeChange.class, new SourceCodeChangeSerialiser() );

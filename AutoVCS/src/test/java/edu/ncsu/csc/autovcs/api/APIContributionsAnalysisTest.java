@@ -5,26 +5,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Map;
 
+import javax.sql.DataSource;
+import javax.transaction.Transactional;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import edu.ncsu.csc.autovcs.DBUtils;
+import edu.ncsu.csc.autovcs.TestConfig;
 import edu.ncsu.csc.autovcs.TestUtils;
 import edu.ncsu.csc.autovcs.forms.ContributionsSummaryForm;
 
 @RunWith ( SpringRunner.class )
-@SpringBootTest
-@AutoConfigureMockMvc
+@EnableAutoConfiguration
+@SpringBootTest ( classes = TestConfig.class )
+@ActiveProfiles ( { "test" } )
 public class APIContributionsAnalysisTest {
 
     private static final String   ORG = "AutoVCS";
@@ -35,15 +41,19 @@ public class APIContributionsAnalysisTest {
     @Autowired
     private WebApplicationContext context;
 
+    @Autowired
+    private DataSource            ds;
+
     @Before
     public void setup () {
         mvc = MockMvcBuilders.webAppContextSetup( context ).build();
 
-        DBUtils.resetDB();
+        DBUtils.resetDB( ds );
 
     }
 
     @Test
+    @Transactional
     public void testContributionsAPI () throws Exception {
 
         final ContributionsSummaryForm csf = new ContributionsSummaryForm();
@@ -87,6 +97,7 @@ public class APIContributionsAnalysisTest {
     }
 
     @Test
+    @Transactional
     public void testContributionsAPINoData () throws Exception {
         final ContributionsSummaryForm csf = new ContributionsSummaryForm();
 

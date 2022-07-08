@@ -1,6 +1,5 @@
 package edu.ncsu.csc.autovcs.models.persistent;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -21,161 +20,67 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 import org.kohsuke.github.GHCommit.File;
-import org.kohsuke.github.GHCommit.GHAuthor;
 
 @Entity
-@Table ( name = "GHCommits" )
-@SuppressWarnings ( { "deprecation", "unchecked" } )
-public class GHCommit extends DomainObject<GHCommit> {
-
-    private static DomainObjectCache<String, GHCommit> cache = new DomainObjectCache<String, GHCommit>(
-            GHCommit.class );
+public class GHCommit extends DomainObject {
 
     @Id
     @GeneratedValue ( strategy = GenerationType.IDENTITY )
-    private Long                                       id;
+    private Long              id;
 
-    @ManyToOne // (cascade = CascadeType.ALL)
-    private GitUser                                    author;
+    @ManyToOne ( cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH } )
+    private GitUser           author;
 
-    @ManyToOne // (cascade = CascadeType.ALL)
-    private GitUser                                    committer;
+    @ManyToOne ( cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH } )
+    private GitUser           committer;
 
     @NotNull
     @Column ( columnDefinition = "text" )
-    private String                                     commitMessage;
+    private String            commitMessage;
 
     @NotNull
-    private String                                     sha1;
+    private String            sha1;
 
     @ManyToOne
     @NotNull
-    private GHRepository                               repository;
+    private GHRepository      repository;
 
     @ElementCollection ( fetch = FetchType.EAGER )
-    private final Set<String>                          associatedBranches;
+    private final Set<String> associatedBranches;
 
-    private Instant                                    commitDate;
+    private Instant           commitDate;
 
-    private boolean                                    isMergeCommit;
+    private boolean           isMergeCommit;
 
-    private Integer                                    linesAdded;
+    private Integer           linesAdded;
 
-    private Integer                                    linesRemoved;
+    private Integer           linesRemoved;
 
-    private Integer                                    linesChanged;
+    private Integer           linesChanged;
 
-    private Integer                                    filesChanged;
+    private Integer           filesChanged;
 
-    private String                                     url;
+    private String            url;
 
-    private String                                     parent;
+    private String            parent;
 
     @OneToMany ( mappedBy = "associatedCommit", cascade = CascadeType.ALL, fetch = FetchType.LAZY )
-    private Set<GHFile>                                files;
+    private Set<GHFile>       files;
 
-    public GHCommit ( final org.kohsuke.github.GHCommit c ) {
-        this( c, null );
-    }
-
-    public GHCommit ( final org.kohsuke.github.GHCommit c, final String branchName ) {
-        this();
-        try {
-            final GHAuthor author = (GHAuthor) c.getCommitShortInfo().getAuthor();
-            final GHAuthor committer = (GHAuthor) c.getCommitShortInfo().getCommitter();
-
-            this.author = GitUser.forUser( author );
-            this.committer = GitUser.forUser( committer );
-            this.commitMessage = c.getCommitShortInfo().getMessage();
-            this.sha1 = c.getSHA1();
-
-            final List<File> filesOnCommit = c.getFiles();
-
-            setFiles( filesOnCommit );
-
-            setLinesAdded( filesOnCommit.stream().map( file -> file.getLinesAdded() ).reduce( 0, ( a, b ) -> a + b ) );
-            setLinesRemoved(
-                    filesOnCommit.stream().map( file -> file.getLinesDeleted() ).reduce( 0, ( a, b ) -> a + b ) );
-
-            setLinesChanged(
-                    filesOnCommit.stream().map( file -> file.getLinesChanged() ).reduce( 0, ( a, b ) -> a + b ) );
-
-            final List<File> filesModified = new ArrayList<File>( filesOnCommit );
-
-            filesModified
-                    .removeIf( e -> e.getLinesAdded() == 0 && e.getLinesDeleted() == 0 && e.getLinesChanged() == 0 );
-
-            setFilesChanged( filesModified.size() );
-
-        }
-        catch ( final Exception e ) {
-            throw new RuntimeException( e );
-        }
-        try {
-            this.commitDate = c.getCommitShortInfo().getAuthor().getDate().toInstant();
-        }
-        catch ( final Exception e ) {
-            System.err.println( "Could not retrieve date" );
-        }
-        try {
-            this.isMergeCommit = 2 == c.getParents().size();
-        }
-        catch ( final Exception e ) {
-            // first commit will have no parents, carry on
-        }
-
-        /* If not a merge commit, label the parents */
-        try {
-            if ( c.getParents().size() == 1 ) {
-                this.parent = c.getParentSHA1s().get( 0 );
-            }
-        }
-        catch ( final Exception e ) {
-            // initial commit will have no parents, carry on
-        }
-
-        this.url = c.getHtmlUrl().toString();
-
-        addBranch( branchName );
-    }
-
-    private void setFiles ( final List<File> filesOnCommit ) {
+    public void setFiles ( final List<File> filesOnCommit ) {
         if ( null == this.files ) {
             this.files = new HashSet<edu.ncsu.csc.autovcs.models.persistent.GHFile>();
         }
-        filesOnCommit.forEach(
-                file -> this.files.add( new edu.ncsu.csc.autovcs.models.persistent.GHFile( file, this ) ) );
-    }
-
-    public static List<GHCommit> getForUser ( final GitUser author ) {
-        return (List<GHCommit>) getWhere( GHCommit.class, eqList( "author", author ) );
-    }
-
-    public static List<GHCommit> getByRepository ( final GHRepository repository ) {
-        return (List<GHCommit>) getWhere( GHCommit.class, eqList( "repository", repository ) );
-    }
-
-    public static GHCommit getMostRecentByRepository ( final GHRepository repository ) {
-        try {
-            return (GHCommit) getWhere( GHCommit.class, eqList( "repository", repository ), "commitDate", false, 1 )
-                    .get( 0 );
-        }
-        catch ( final IndexOutOfBoundsException ioobe ) {
-            return null;
-        }
+        filesOnCommit
+                .forEach( file -> this.files.add( new edu.ncsu.csc.autovcs.models.persistent.GHFile( file, this ) ) );
     }
 
     // For Hibernate
     public GHCommit () {
         associatedBranches = new HashSet<String>();
-    }
-
-    public static List<GHCommit> getAll () {
-        return (List<GHCommit>) getAll( GHCommit.class );
     }
 
     public GitUser getCommitter () {
@@ -245,51 +150,6 @@ public class GHCommit extends DomainObject<GHCommit> {
         return this.associatedBranches;
     }
 
-    @Override
-    public void save () {
-        if ( null == author && null == committer ) {
-            throw new RuntimeException( "Must have an author or committer present" );
-        }
-
-        super.save();
-    }
-
-    @Override
-    public int hashCode () {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ( ( sha1 == null ) ? 0 : sha1.hashCode() );
-        return result;
-    }
-
-    @Override
-    public boolean equals ( final Object obj ) {
-        if ( this == obj ) {
-            return true;
-        }
-        if ( obj == null ) {
-            return false;
-        }
-        if ( getClass() != obj.getClass() ) {
-            return false;
-        }
-        final GHCommit other = (GHCommit) obj;
-        if ( sha1 == null ) {
-            if ( other.sha1 != null ) {
-                return false;
-            }
-        }
-        else if ( !sha1.equals( other.sha1 ) ) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    protected Serializable getKey () {
-        return getSha1();
-    }
-
     public boolean isMergeCommit () {
         return isMergeCommit;
     }
@@ -330,8 +190,59 @@ public class GHCommit extends DomainObject<GHCommit> {
         this.filesChanged = filesChanged;
     }
 
+    public String getUrl () {
+        return url;
+    }
+
+    public void setUrl ( final String url ) {
+        this.url = url;
+    }
+
+    public Set<GHFile> getFiles () {
+        return files;
+    }
+
+    public void setFiles ( final Set<GHFile> files ) {
+        this.files = files;
+    }
+
+    public void setParent ( final String parent ) {
+        this.parent = parent;
+    }
+
     public DisplayCommit format () {
         return new DisplayCommit( this );
+    }
+
+    @Override
+    public int hashCode () {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( sha1 == null ) ? 0 : sha1.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals ( final Object obj ) {
+        if ( this == obj ) {
+            return true;
+        }
+        if ( obj == null ) {
+            return false;
+        }
+        if ( getClass() != obj.getClass() ) {
+            return false;
+        }
+        final GHCommit other = (GHCommit) obj;
+        if ( sha1 == null ) {
+            if ( other.sha1 != null ) {
+                return false;
+            }
+        }
+        else if ( !sha1.equals( other.sha1 ) ) {
+            return false;
+        }
+        return true;
     }
 
     public static Map<LocalDate, List<DisplayCommit>> format ( final List<GHCommit> commits ) {

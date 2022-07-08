@@ -5,7 +5,8 @@ target/
 
 ### AutoVCS Configuration Files ###
 gh.properties
-src/main/resources/hibernate.cfg.xml
+src/main/resources/application.yml
+src/main/resources/application-test.yml
 config.json
 
 ### AutoVCS Temporary Files ###

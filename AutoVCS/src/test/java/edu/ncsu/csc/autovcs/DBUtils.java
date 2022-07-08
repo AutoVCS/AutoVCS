@@ -3,15 +3,11 @@ package edu.ncsu.csc.autovcs;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.hibernate.Session;
-import org.hibernate.Transaction;
-import org.hibernate.jdbc.Work;
+import javax.sql.DataSource;
 
-import edu.ncsu.csc.autovcs.models.persistent.DomainObjectCache;
-import edu.ncsu.csc.autovcs.utils.HibernateUtil;
+import org.junit.Assert;
 
 /**
  * Helper class for resetting the database between tests. Truncates all tables,
@@ -26,59 +22,49 @@ import edu.ncsu.csc.autovcs.utils.HibernateUtil;
  */
 public class DBUtils {
 
-    static public void resetDB () {
-        final Session session = HibernateUtil.getCurrentSession();
+    static public void resetDB ( final DataSource dataSource ) {
 
-        final Transaction tx = session.beginTransaction();
+        try ( Connection conn = dataSource.getConnection(); ) {
 
-        /*
-         * credit for how we exploit the Session to get a DB connection:
-         * https://stackoverflow.com/a/9482813
-         */
-        session.doWork( new Work() {
-            @Override
-            public void execute ( final Connection connection ) throws SQLException {
-                final DatabaseMetaData metaData = connection.getMetaData();
-                String dbName = metaData.getURL();
+            final DatabaseMetaData metaData = conn.getMetaData();
+            String dbName = metaData.getURL();
 
-                /*
-                 * DB URL looks something like
-                 * `jdbc:mysql://localhost:3306/AutoVCS?
-                 * createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true`,
-                 * so it has to be pulled apart to get the actual name out
-                 */
-                dbName = dbName.split( "/" )[3].split( "\\?" )[0];
+            /*
+             * DB URL looks something like `jdbc:mysql://localhost:3306/AutoVCS?
+             * createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true`, so
+             * it has to be pulled apart to get the actual name out
+             */
+            dbName = dbName.split( "/" )[3].split( "\\?" )[0];
 
-                final ResultSet tables = metaData.getTables( dbName, null, null, new String[] { "TABLE" } );
+            final ResultSet tables = metaData.getTables( dbName, null, null, new String[] { "TABLE" } );
 
-                try ( Statement st = connection.createStatement(); ) {
-                    st.executeUpdate( "SET FOREIGN_KEY_CHECKS = 0" );
+            try ( Statement st = conn.createStatement(); ) {
 
-                    while ( tables.next() ) {
-                        final String tableName = tables.getString( "TABLE_NAME" );
+                st.executeUpdate( "SET FOREIGN_KEY_CHECKS = 0" );
 
-                        /*
-                         * If you delete all entries from Hibernate's table it
-                         * gets very unhappy
-                         */
-                        if ( "hibernate_sequence".equals( tableName ) ) {
-                            continue;
-                        }
+                while ( tables.next() ) {
+                    final String tableName = tables.getString( "TABLE_NAME" );
 
-                        st.executeUpdate( "TRUNCATE TABLE " + tableName );
+                    /*
+                     * If you delete all entries from Hibernate's table it gets
+                     * very unhappy
+                     */
+                    if ( "hibernate_sequence".equals( tableName ) ) {
+                        continue;
                     }
 
-                    st.executeUpdate( "SET FOREIGN_KEY_CHECKS = 1" );
-
+                    st.executeUpdate( "TRUNCATE TABLE " + tableName );
                 }
 
+                st.executeUpdate( "SET FOREIGN_KEY_CHECKS = 1" );
+
             }
-
-        } );
-
-        tx.commit();
-
-        DomainObjectCache.getCaches().forEach( cache -> cache.clear() );
+        }
+        catch ( final Exception e ) {
+            System.err.println( "Something bad appears to have happened while preparing environment " + e.getClass() );
+            // e.printStackTrace( System.err );
+            Assert.fail();
+        }
     }
 
 }

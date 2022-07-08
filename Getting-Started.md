@@ -8,7 +8,7 @@ There are a couple of things you have to setup before AutoVCS will work:
 
 * Build and install [ChangeDistiller](https://github.com/AutoVCS/ChangeDistiller).  You can either build the ChangeDistiller JAR file yourself, or use a prebuilt JAR from the `Releases` page.  You must then install the JAR file into your local Maven repository by running `mvn install:install-file -Dfile=/path/to/ChangeDistiller.jar -DgroupId=ch.uzh.ifi.seal -DartifactId=ChangeDistiller -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true`.  *This requires Maven on your path*
 
-* Configure database.  AutoVCS will create a database with the correct tables automatically, but it must be told how to connect to a MySQL/MariaDB database.  Copy `AutoVCS/src/main/resources/hibernate-template.cfg.xml` to `AutoVCS/src/main/resources/hibernate.cfg.xml` and put your database password on line 24.  If you're using a non-root user for the database, update the username on line 23 as well.
+* Configure database.  AutoVCS will create a database with the correct tables automatically, but it must be told how to connect to a MySQL/MariaDB database.  Copy `AutoVCS/src/main/resources/application.yml.template` to `AutoVCS/src/main/resources/application.yml` and put your database password on line 6.  If you're using a non-root user for the database, update the username on line 5 as well.  If you plan on doing any development on AutoVCS and/or running the provided tests, make a second copy of the file, called `application-test.yml`.  This defines a separate profile for running the provided JUnit testcases so that they won't thrash your normal database.  Update line 4 in `application-test.yml`, changing `jdbc:mysql://localhost:3306/AutoVCS` to `jdbc:mysql://localhost:3306/AutoVCS_test` (note the new name of the database), leaving the rest of the line intact.
 
 * Configure Github Properties file.  Copy `AutoVCS/gh-template.properties` to `AutoVCS/gh.properties` and fill in the following options:
 
@@ -134,4 +134,37 @@ You can pass multiple repository matchers to the `repositories` field, and can u
 }
 ```
 
+
+
+## Oddities
+
+
+We've observed that many students enjoy writing code that features emojis, particularly in comments.  Unfortunately, these four-byte UTF8 characters [are not supported by default in MySQL/MariaDB](https://stackoverflow.com/a/10959780).
+
+If you get errors such as:
+
+```
+com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Incorrect string value: '\xF0\x9F\x92\xA1 T...' for column `autovcs`.`ghfile`.`changes` at row 1
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:104) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeInternal(ClientPreparedStatement.java:916) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeUpdateInternal(ClientPreparedStatement.java:1061) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeUpdateInternal(ClientPreparedStatement.java:1009) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+	at com.mysql.cj.jdbc.ClientPreparedStatement.executeLargeUpdate(ClientPreparedStatement.java:1320) ~[mysql-connector-java-8.0.29.jar:8.0.29]
+```
+
+you'll need to modify your MariaDB/MySQL settings to enable support.  Locate your `my.cnf`/`my.ini` (location depends on your operating system; consult documentation for your OS to find the specific location) and make the following additions:
+
+```
+[client] 
+default-character-set = utf8mb4 
+[mysql] 
+default-character-set = utf8mb4 
+[mysqld] 
+character-set-client-handshake = FALSE 
+character-set-server = utf8mb4 
+collation-server = utf8mb4_unicode_ci 
+init_connect='SET NAMES utf8mb4'
+```
+
+On MariaDB 10.8 on Windows 10, none of these options are configured by default, so we added them to the configuration.  If other options *are* set, then modify them instead.  Restart MariaDB/MYSQL to make the changes take effect; you can confirm by running the command `SHOW VARIABLES WHERE Variable_name LIKE 'character\_set\_%' OR Variable_name LIKE 'collation%';` from a database client.
 

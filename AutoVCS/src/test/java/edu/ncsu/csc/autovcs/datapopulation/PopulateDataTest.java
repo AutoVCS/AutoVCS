@@ -1,35 +1,58 @@
 package edu.ncsu.csc.autovcs.datapopulation;
 
+import javax.sql.DataSource;
+import javax.transaction.Transactional;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import edu.ncsu.csc.autovcs.DBUtils;
+import edu.ncsu.csc.autovcs.TestConfig;
 import edu.ncsu.csc.autovcs.controllers.api.APIRepositoryController;
 import edu.ncsu.csc.autovcs.controllers.api.APIRepositoryController.RepositoryFetchInformation;
 import edu.ncsu.csc.autovcs.forms.PopulateDataForm;
 import edu.ncsu.csc.autovcs.models.persistent.GHRepository;
+import edu.ncsu.csc.autovcs.services.GHRepositoryService;
 
+@RunWith ( SpringRunner.class )
+@EnableAutoConfiguration
+@SpringBootTest ( classes = TestConfig.class )
+@ActiveProfiles ( { "test" } )
 public class PopulateDataTest {
 
     /** Github org for project; test data lives here */
-    static private final String           AutoVCS_Org      = "AutoVCS";
+    static private final String     AutoVCS_Org      = "AutoVCS";
 
-    static private final String           AutoVCS_DemoProj = "AutoVCS-CoffeeMaker";
+    static private final String     AutoVCS_DemoProj = "AutoVCS-CoffeeMaker";
 
-    static private final String           NotExistsOrg     = "ThisOrganisationDoesntExist";
-    static private final String           NotExistsProj    = "ThisProjectDoesntExist";
+    static private final String     NotExistsOrg     = "ThisOrganisationDoesntExist";
+    static private final String     NotExistsProj    = "ThisProjectDoesntExist";
 
-    private final APIRepositoryController ctrl             = new APIRepositoryController();
+    @Autowired
+    private GHRepositoryService     repositoryService;
+
+    @Autowired
+    private DataSource              ds;
+
+    @Autowired
+    private APIRepositoryController ctrl;
 
     @Before
     public void setup () {
-        DBUtils.resetDB();
+        DBUtils.resetDB( ds );
     }
 
     @Test
+    @Transactional
     public void testSuccessfulPopulateDataFromGithub () {
 
         final PopulateDataForm pdf = prepareRepoInitialisation();
@@ -49,15 +72,18 @@ public class PopulateDataTest {
         Assert.assertEquals( "Populating data from Github should return a HttpStatus::Ok on success", HttpStatus.OK,
                 status );
 
-        final GHRepository cm = GHRepository.getByNameAndOrganisation( AutoVCS_DemoProj, AutoVCS_Org );
+        final GHRepository cm = repositoryService.findByNameAndOrganisation( AutoVCS_DemoProj, AutoVCS_Org );
 
         Assert.assertNotNull( "Populated organisation should exist", cm );
+
+        repositoryService.loadCommits( cm );
 
         Assert.assertEquals( "AutoVCS-CoffeeMaker should have 20 commits", 20, cm.getCommits().size() );
 
     }
 
     @Test
+    @Transactional
     public void testCannotPopulateWhenProjectDoesNotExist () {
         final PopulateDataForm pdf = prepareRepoInitialisation();
         pdf.setRepository( NotExistsProj );
@@ -85,6 +111,7 @@ public class PopulateDataTest {
     }
 
     @Test
+    @Transactional
     public void testCannotPopulateWhenRepoDoesNotExist () {
         final PopulateDataForm pdf = prepareRepoInitialisation();
         pdf.setOrganisation( NotExistsOrg );
@@ -106,6 +133,7 @@ public class PopulateDataTest {
     }
 
     @Test
+    @Transactional
     public void testCannotCheckDuplicateUsersWithoutTeams () {
 
         final PopulateDataForm pdf = prepareRepoInitialisation();

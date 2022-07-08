@@ -21,6 +21,7 @@ import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHTeam;
 import org.kohsuke.github.GitHub;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,10 +33,26 @@ import org.springframework.web.bind.annotation.RestController;
 import edu.ncsu.csc.autovcs.AutoVCSProperties;
 import edu.ncsu.csc.autovcs.forms.PopulateDataForm;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
+import edu.ncsu.csc.autovcs.services.GHCommitService;
+import edu.ncsu.csc.autovcs.services.GHPullRequestService;
+import edu.ncsu.csc.autovcs.services.GHRepositoryService;
+import edu.ncsu.csc.autovcs.services.GitUserService;
 
 @RestController
 @SuppressWarnings ( { "rawtypes", "unchecked" } )
 public class APIRepositoryController extends APIController {
+
+    @Autowired
+    private GitUserService       userService;
+
+    @Autowired
+    private GHRepositoryService  repositoryService;
+
+    @Autowired
+    private GHCommitService      commitService;
+
+    @Autowired
+    private GHPullRequestService prService;
 
     @GetMapping ( BASE_PATH + "rateLimits" )
     public ResponseEntity getRateLimits () {
@@ -138,8 +155,8 @@ public class APIRepositoryController extends APIController {
              * avoid creating duplicates if we call this method again to get
              * updates
              */
-            edu.ncsu.csc.autovcs.models.persistent.GHRepository repoToSave = edu.ncsu.csc.autovcs.models.persistent.GHRepository
-                    .getByNameAndOrganisation( repoName, organisationName );
+            edu.ncsu.csc.autovcs.models.persistent.GHRepository repoToSave = repositoryService
+                    .findByNameAndOrganisation( repoName, organisationName );
 
             /* Create a new repo if there wasn't one found */
             System.out.println( "Initialising repo " + repoName + " @" + Instant.now() );
@@ -147,13 +164,20 @@ public class APIRepositoryController extends APIController {
                 repoToSave = new edu.ncsu.csc.autovcs.models.persistent.GHRepository();
                 repoToSave.setRepositoryName( repoName );
                 repoToSave.setOrganisationName( organisationName );
-                repoToSave.save();
+                repositoryService.save( repoToSave );
             }
 
             /* Add commits */
             if ( form.getCommit() ) {
                 System.out.println( "Fetching commits for " + repoName + " @" + Instant.now() );
-                repoToSave.addCommits( getCommitsOnRepo( repo, repoToSave, form.isFetchAllHistory() ) );
+                final Collection<edu.ncsu.csc.autovcs.models.persistent.GHCommit> newCommits = getCommitsOnRepo( repo,
+                        repoToSave, form.isFetchAllHistory() );
+                /*
+                 * Due to lazy loading on the part of Spring, we need to fetch
+                 * all possible commits first or we get strange issues
+                 */
+                repositoryService.loadCommits( repoToSave );
+                repoToSave.addCommits( newCommits );
             }
 
             /* Add PRs */
@@ -177,7 +201,7 @@ public class APIRepositoryController extends APIController {
             repoToSave.setLastFetchedAt( Instant.now() );
 
             System.out.println( "Finished; about to save " + repoName + " @" + Instant.now() );
-            repoToSave.save();
+            repositoryService.save( repoToSave );
             matchingRepos++;
         }
 
@@ -209,9 +233,10 @@ public class APIRepositoryController extends APIController {
                 throw new RuntimeException( "A matching team could not be found" );
             }
 
-            final Set<GitUser> usersOnTeam = team.getMembers().stream().map( e -> GitUser.forUser( e ) )
+            final Set<GitUser> usersOnTeam = team.getMembers().stream().map( e -> userService.forUser( e ) )
                     .collect( Collectors.toSet() );
 
+            repositoryService.loadCommits( repoToSave );
             final Set<GitUser> usersOnRepo = repoToSave.getCommits().stream().map( e -> e.getAuthor() )
                     .collect( Collectors.toSet() );
 
@@ -240,7 +265,7 @@ public class APIRepositoryController extends APIController {
             final List<GHPullRequest> requests = repo.getPullRequests( GHIssueState.ALL );
             for ( final GHPullRequest request : requests ) {
                 final GHPullRequest fullRequest = repo.getPullRequest( request.getNumber() );
-                requestsToSave.add( new edu.ncsu.csc.autovcs.models.persistent.GHPullRequest( fullRequest ) );
+                requestsToSave.add( prService.forPullRequest( fullRequest ) );
             }
 
         }
@@ -256,9 +281,12 @@ public class APIRepositoryController extends APIController {
         final Map<String, edu.ncsu.csc.autovcs.models.persistent.GHCommit> allCommitsForRepo = new HashMap<String, edu.ncsu.csc.autovcs.models.persistent.GHCommit>();
         try {
 
-            /* Grab the most recent commit we have for this repository */
-            final edu.ncsu.csc.autovcs.models.persistent.GHCommit mostRecent = edu.ncsu.csc.autovcs.models.persistent.GHCommit
-                    .getMostRecentByRepository( persistentRepo );
+            /*
+             * Grab the most recent commit we have for this repository, so we
+             * can figure out the timestamp on it & know how far back to fetch
+             */
+            final edu.ncsu.csc.autovcs.models.persistent.GHCommit mostRecent = commitService
+                    .findMostRecentByRepository( persistentRepo );
 
             /* Handle the scenario if we have no commits */
             final Instant mostRecentCommitDate = null == mostRecent ? Instant.ofEpochMilli( 0L )
@@ -297,8 +325,8 @@ public class APIRepositoryController extends APIController {
                         allCommitsForRepo.get( commitHash ).addBranch( branch.getName() );
                     }
                     else {
-                        final edu.ncsu.csc.autovcs.models.persistent.GHCommit parsed = new edu.ncsu.csc.autovcs.models.persistent.GHCommit(
-                                commit, branch.getName() );
+                        final edu.ncsu.csc.autovcs.models.persistent.GHCommit parsed = commitService.forCommit( commit,
+                                branch.getName() );
                         allCommitsForRepo.put( commitHash, parsed );
                     }
                 } );
@@ -323,25 +351,25 @@ public class APIRepositoryController extends APIController {
     @GetMapping ( BASE_PATH + "repositories/{organisation}/{repository}/branches" )
     public ResponseEntity getRepositoryBranches ( @PathVariable final String organisation,
             @PathVariable final String repository ) {
-        final edu.ncsu.csc.autovcs.models.persistent.GHRepository repo = edu.ncsu.csc.autovcs.models.persistent.GHRepository
-                .getByNameAndOrganisation( repository, organisation );
+        final edu.ncsu.csc.autovcs.models.persistent.GHRepository repo = repositoryService
+                .findByNameAndOrganisation( repository, organisation );
 
-        return new ResponseEntity( edu.ncsu.csc.autovcs.models.persistent.GHCommit.getByRepository( repo ).stream()
-                .map( commit -> commit.getBranches() ).flatMap( branches -> branches.stream() ).distinct()
-                .collect( Collectors.toSet() ), HttpStatus.OK );
+        return new ResponseEntity(
+                commitService.findByRepository( repo ).stream().map( commit -> commit.getBranches() )
+                        .flatMap( branches -> branches.stream() ).distinct().collect( Collectors.toSet() ),
+                HttpStatus.OK );
     }
 
     @GetMapping ( BASE_PATH + "repositories/{organisation}/{repository}/members" )
     public ResponseEntity getRepositoryMembers ( @PathVariable final String organisation,
             @PathVariable final String repository ) {
-        final edu.ncsu.csc.autovcs.models.persistent.GHRepository repo = edu.ncsu.csc.autovcs.models.persistent.GHRepository
-                .getByNameAndOrganisation( repository, organisation );
+        final edu.ncsu.csc.autovcs.models.persistent.GHRepository repo = repositoryService
+                .findByNameAndOrganisation( repository, organisation );
 
-        final Set<GitUser> users = edu.ncsu.csc.autovcs.models.persistent.GHCommit.getByRepository( repo ).stream()
-                .map( commit -> commit.getAuthor() ).distinct().collect( Collectors.toSet() );
+        final Set<GitUser> users = commitService.findByRepository( repo ).stream().map( commit -> commit.getAuthor() )
+                .distinct().collect( Collectors.toSet() );
 
-        final List<edu.ncsu.csc.autovcs.models.persistent.GHPullRequest> PRs = edu.ncsu.csc.autovcs.models.persistent.GHPullRequest
-                .getByRepository( repo );
+        final List<edu.ncsu.csc.autovcs.models.persistent.GHPullRequest> PRs = prService.findByRepository( repo );
 
         users.addAll( PRs.stream().map( request -> request.getOpenedBy() ).collect( Collectors.toSet() ) );
 
@@ -357,8 +385,7 @@ public class APIRepositoryController extends APIController {
          * map to a flat type because otherwise we get a stack overflow b/c
          * infinite recursion with repo <-> commit referencing each other.
          */
-        final List<edu.ncsu.csc.autovcs.models.persistent.GHRepository> repos = edu.ncsu.csc.autovcs.models.persistent.GHRepository
-                .getAll();
+        final List<edu.ncsu.csc.autovcs.models.persistent.GHRepository> repos = repositoryService.findAll();
         return new ResponseEntity( repos.stream().map( edu.ncsu.csc.autovcs.models.persistent.GHRepository::format )
                 .collect( Collectors.toList() ), HttpStatus.OK );
     }

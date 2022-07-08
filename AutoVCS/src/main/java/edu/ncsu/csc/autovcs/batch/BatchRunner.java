@@ -21,6 +21,11 @@ import org.apache.commons.cli.ParseException;
 import org.kohsuke.github.GHOrganization;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
 
 import com.google.gson.Gson;
 
@@ -28,22 +33,33 @@ import edu.ncsu.csc.autovcs.AutoVCSProperties;
 import edu.ncsu.csc.autovcs.forms.ContributionsSummaryForm;
 import edu.ncsu.csc.autovcs.services.ContributionAnalysisService;
 
+@ComponentScan ( "edu.ncsu.csc.autovcs" )
+@SpringBootApplication
 public class BatchRunner {
 
-    static private final List<String>        successfulRepositories = new Vector<String>();
+    static private final List<String>          successfulRepositories = new Vector<String>();
 
-    static private final Map<String, String> failedRepositories     = new ConcurrentHashMap<String, String>();
+    static private final Map<String, String>   failedRepositories     = new ConcurrentHashMap<String, String>();
 
-    private static final Gson                gson                   = new Gson();
+    private static final Gson                  gson                   = new Gson();
 
-    /**
-     *
-     * @param args
-     *            Batch mode supports five run parameters, as described in the
-     *            documentation on our Github Repository:
-     *            https://github.com/AutoVCS/AutoVCS/blob/main/Getting-Started.md#batch-mode
-     */
+    static private ContributionAnalysisService cas;
+
     public static void main ( final String[] args ) throws Exception {
+        /* Don't launch Tomcat: https://stackoverflow.com/a/44394305 */
+        final ConfigurableApplicationContext ctx = new SpringApplicationBuilder( BatchRunner.class )
+                .web( WebApplicationType.NONE ).run( args );
+        /* Service lookup: https://stackoverflow.com/questions/46617044/how-to-use-autowired-autowired-references-from-mainstring-args-method */
+        cas = ctx.getBean( ContributionAnalysisService.class );
+
+
+        run( args );
+
+        System.exit( 0 );
+
+    }
+
+    static public void run ( final String... args ) throws Exception {
 
         final CommandLine line = parseOptions( args );
         final Path configurationFile = Path.of( getConfigurationFile( line ) );
@@ -163,9 +179,6 @@ public class BatchRunner {
             System.out.println( "##########################################################" );
 
         }
-
-        System.exit( 0 );
-
     }
 
     static private class RunnerWorker implements Runnable {
@@ -187,13 +200,14 @@ public class BatchRunner {
                 successfulRepositories.add( name );
             }
             catch ( final Exception e ) {
+                e.printStackTrace();
                 failedRepositories.put( name, e.getMessage() );
             }
 
         }
 
         private void analyseAndWrite () throws Exception {
-            final String data = ContributionAnalysisService.getContributionSummaries( csf );
+            final String data = cas.getContributionSummaries( csf );
 
             final String builtPage = template.replace( "AUTOVCS_JSON_DATA", data );
 

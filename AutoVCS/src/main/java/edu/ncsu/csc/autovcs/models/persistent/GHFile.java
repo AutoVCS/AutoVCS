@@ -45,8 +45,9 @@ public class GHFile extends DomainObject {
         this.linesDeleted = file.getLinesDeleted();
 
         this.linesChanged = file.getLinesChanged();
-
-        this.url = file.getBlobUrl().toString();
+        
+        /* Null check in case of submodules or other files with no convenient blob */
+        this.url = null == file.getBlobUrl() ? null : file.getBlobUrl().toString();
 
         this.changes = file.getPatch();
     }

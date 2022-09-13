@@ -171,7 +171,7 @@ public class ContributionAnalysisService {
 
         } );
 
-        return new ContributionsSummariesAPIData( changes, percentageContributionPerFile );
+        return new ContributionsSummariesAPIData( changes, percentageContributionPerFile, csf.getRepository() );
     }
 
     private ContributionsSummaries createUnaggregatedDiffs ( final ContributionsSummaryForm form ) {
@@ -231,7 +231,7 @@ public class ContributionAnalysisService {
 
         try {
 
-            Thread.sleep( 250 );
+            Thread.sleep( 500 );
 
             a = new File( aPath );
             b = new File( bPath );
@@ -511,11 +511,14 @@ public class ContributionAnalysisService {
         private final Map<GitUser, ChangeSummariesList> changesPerUser;
 
         private final Map<String, Map<GitUser, Double>> changesPerFile;
+        
+        private final String repo;
 
         public ContributionsSummariesAPIData ( final Map<GitUser, ChangeSummariesList> changesPerUser,
-                final Map<String, Map<GitUser, Double>> percentageContributionPerFile ) {
+                final Map<String, Map<GitUser, Double>> percentageContributionPerFile, final String repo ) {
             this.changesPerUser = changesPerUser;
             this.changesPerFile = percentageContributionPerFile;
+            this.repo = repo;
         }
 
         public Map<GitUser, ChangeSummariesList> getChangesPerUser () {
@@ -526,6 +529,10 @@ public class ContributionAnalysisService {
             return changesPerFile;
         }
 
+		public String getRepo() {
+			return repo;
+		}
+        
     }
 
 }

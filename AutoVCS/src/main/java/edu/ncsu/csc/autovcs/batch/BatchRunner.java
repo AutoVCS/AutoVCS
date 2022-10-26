@@ -96,6 +96,12 @@ public class BatchRunner {
          * or repository prefixes, at once, each with different configurations
          */
 
+        
+        System.out.println( "\n\n\n\n\n\n\n\n" );
+        System.out.println( "##########################################################" );
+        System.out.printf("Parsed %d run configurations from JSON file\n", bc.getRepositories().size());
+        System.out.println( "##########################################################" );
+        
         bc.getRepositories().forEach( RepositoryOption -> {
 
             final String organisation = bc.getOrganisation();

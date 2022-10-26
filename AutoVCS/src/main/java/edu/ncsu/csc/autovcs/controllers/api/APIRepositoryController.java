@@ -375,7 +375,9 @@ public class APIRepositoryController extends APIController {
 
         users.addAll( PRs.stream().map( PR -> PR.getPullRequestComments() ).flatMap( comments -> comments.stream() )
                 .map( comment -> comment.getCommenter() ).collect( Collectors.toSet() ) );
-
+        
+        users.removeIf( user -> user.isExcluded() );
+        
         return new ResponseEntity( users, HttpStatus.OK );
     }
 

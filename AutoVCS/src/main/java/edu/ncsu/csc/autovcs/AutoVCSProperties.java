@@ -59,6 +59,10 @@ public class AutoVCSProperties {
     static final public String getPassword () {
         return isEnterprise() ? prop.getProperty( "enterprisePassword" ) : prop.getProperty( "password" );
     }
+    
+    static final public Boolean isWeakEquivalence () {
+    	return Boolean.valueOf( prop.getProperty( "weakEquivalence", "false" ) );
+    }
 
     static final public String getEmailDomain () {
         return prop.getProperty( "desiredEmailDomain" );

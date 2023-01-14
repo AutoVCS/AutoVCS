@@ -30,6 +30,10 @@ public class GitUserService extends Service<GitUser, Long> {
     public GitUser findByName ( final String name ) {
         return repository.findByName( name );
     }
+    
+    public GitUser findByEmail ( final String email ) {
+        return repository.findTop1ByEmailOrderById( email );
+    }
 
     public GitUser findByNameAndEmail ( final String name, final String email ) {
         return repository.findByNameAndEmail( name, email );
@@ -58,7 +62,7 @@ public class GitUserService extends Service<GitUser, Long> {
             email = buildEmail( other.getLogin() );
         }
 
-        GitUser user = findByNameAndEmail( name, email );
+        GitUser user = AutoVCSProperties.isWeakEquivalence() ? findByEmail( email ) : findByNameAndEmail( name, email );
 
         if ( null == user ) {
             user = new GitUser( other );
@@ -79,7 +83,7 @@ public class GitUserService extends Service<GitUser, Long> {
         final String name = other.getName();
         final String email = null == other.getEmail() ? buildEmail( other.getName() ) : other.getEmail();
 
-        GitUser user = findByNameAndEmail( name, email );
+        GitUser user = AutoVCSProperties.isWeakEquivalence() ? findByEmail( email ) : findByNameAndEmail( name, email );
 
         if ( null == user ) {
             user = new GitUser( other );

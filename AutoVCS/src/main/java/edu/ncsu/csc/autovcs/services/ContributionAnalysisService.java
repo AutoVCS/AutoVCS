@@ -388,7 +388,7 @@ public class ContributionAnalysisService {
         } );
 
         if ( contributionsPerCommit.isEmpty() ) {
-            throw new NoSuchElementException( "There was no data matching the parameters requested" );
+            throw new NoSuchElementException( String.format("There was no data matching the parameters requested for %s-%s",form.getOrganisation(),form.getRepository()) );
         }
         else if ( "BY_USER".equals( form.getType() ) ) {
             return new ContributionsSummaries( contributionsPerCommit, commitsPerUser, contributionsPerFile );

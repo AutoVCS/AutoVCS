@@ -36,7 +36,7 @@ There are a couple of things you have to setup before AutoVCS will work:
 
 * `desiredEmailDomain`: AutoVCS identifies users by their `name` and `email address`.  When fetching information from the Github API, users with no known email address will have an identifying email address generated for them, according to the format `username@desiredEmailDomain`.  We suggest populating the URL of your institution (for example `ncsu.edu`), or using `gmail.com`
 
-
+* `weakEquivalence`: As above, AutoVCS considers users equal if they have the same `name` and `email address`.  We have observed that often students will have two different Git aliases with the same email, but different names (for example, `John Smith / jsmith@ncsu.edu` and `jsmith / jsmith@ncsu.edu`).  Enabling weak user equivalence performs equality checks just on email address, not name.  While we have found no places where this is unsafe, if not specified, it defaults to `false`.
 
 
 ## Running AutoVCS

@@ -2,9 +2,11 @@
 
 AutoVCS is an application that presents summaries of individual developers' code contributions to team-based projects.  We envision that this may be particularly helpful for helping TAs and instructors grade student projects.
 
+We have a paper on this project, "Improving Grading Outcomes in Software Engineering Projects Through Automated Contributions Summaries", at ICSE-SEET 2023 (link forthcoming once made available by conference organisers).
+
 
 AutoVCS is written in Java, and can present summaries for Java code contributions tracked through GitHub (either Github.com, or Github Enterprise).  AutoVCS has the following requirements:
-- Java 8+ (tested with Java 8 and Java 11)
+- Java 8+ (tested with Java 8, 11, and 17)
 - MySQL or MariaDB (tested with MariaDB 10.3 & 10.8 and MySQL 8.0)
 - Our [improved version](https://github.com/AutoVCS/ChangeDistiller) of ChangeDistiller [1].
 

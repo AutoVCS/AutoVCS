@@ -241,7 +241,7 @@ public class ContributionAnalysisService {
 
             final String url = AutoVCSProperties.getGithubURL();
             final String username = AutoVCSProperties.getUsername();
-            final String password = AutoVCSProperties.getPassword();
+            final String password = AutoVCSProperties.getToken();
 
             git = Git.cloneRepository().setURI( String.format( "%s/%s/%s", url, organisation, repo ) )
                     .setCredentialsProvider( new UsernamePasswordCredentialsProvider( username, password ) )

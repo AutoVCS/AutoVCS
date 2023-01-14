@@ -56,8 +56,8 @@ public class AutoVCSProperties {
         return isEnterprise() ? prop.getProperty( "enterpriseUsername" ) : prop.getProperty( "username" );
     }
 
-    static final public String getPassword () {
-        return isEnterprise() ? prop.getProperty( "enterprisePassword" ) : prop.getProperty( "password" );
+    static final public String getToken () {
+        return isEnterprise() ? prop.getProperty( "enterpriseToken" ) : prop.getProperty( "token" );
     }
     
     static final public Boolean isWeakEquivalence () {

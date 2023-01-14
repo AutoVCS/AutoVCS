@@ -22,7 +22,6 @@ There are a couple of things you have to setup before AutoVCS will work:
 
     * `enterpriseUsername`: Username for connecting to your Github Enterprise site.
 
-    * `enterprisePassword`: Password for connecting to your Github Enterprise site.  This may be the same as your token.
   
 * alternatively, if `githubEnterprise` is set to `false`, instead configure:
   
@@ -30,11 +29,13 @@ There are a couple of things you have to setup before AutoVCS will work:
   
     * `username`: Username for connecting to Github.com
   
-    * `password`: Password for connecting to Github.com.  This may be the same as your token.
 
-* If you regularly use `Github.com` and a Github Enterprise installation, you may configure all eight options and simply switch the `githubEnterprise` flag back and forth when you wish to use the other configuration.  Regardless, you must also configure:
+* If you regularly use `Github.com` and a Github Enterprise installation, you may configure all six options and simply switch the `githubEnterprise` flag back and forth when you wish to use the other configuration.  Regardless, you must also configure:
 
 * `desiredEmailDomain`: AutoVCS identifies users by their `name` and `email address`.  When fetching information from the Github API, users with no known email address will have an identifying email address generated for them, according to the format `username@desiredEmailDomain`.  We suggest populating the URL of your institution (for example `ncsu.edu`), or using `gmail.com`
+
+
+You may also optionally configure:
 
 * `weakEquivalence`: As above, AutoVCS considers users equal if they have the same `name` and `email address`.  We have observed that often students will have two different Git aliases with the same email, but different names (for example, `John Smith / jsmith@ncsu.edu` and `jsmith / jsmith@ncsu.edu`).  Enabling weak user equivalence performs equality checks just on email address, not name.  While we have found no places where this is unsafe, if not specified, it defaults to `false`.
 

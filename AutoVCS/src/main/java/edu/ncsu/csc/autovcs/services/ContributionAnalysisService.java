@@ -171,7 +171,7 @@ public class ContributionAnalysisService {
 
         } );
 
-        return new ContributionsSummariesAPIData( changes, percentageContributionPerFile, csf.getRepository() );
+        return new ContributionsSummariesAPIData( changes, percentageContributionPerFile, csf.getRepository(), summaries.getStartDate(), summaries.getEndDate() );
     }
 
     private ContributionsSummaries createUnaggregatedDiffs ( final ContributionsSummaryForm form ) {
@@ -388,10 +388,10 @@ public class ContributionAnalysisService {
         } );
 
         if ( contributionsPerCommit.isEmpty() ) {
-            throw new NoSuchElementException( String.format("There was no data matching the parameters requested for %s-%s",form.getOrganisation(),form.getRepository()) );
+            return new ContributionsSummaries(form.getStartDate(), form.getEndDate());
         }
         else if ( "BY_USER".equals( form.getType() ) ) {
-            return new ContributionsSummaries( contributionsPerCommit, commitsPerUser, contributionsPerFile );
+            return new ContributionsSummaries( contributionsPerCommit, commitsPerUser, contributionsPerFile, form.getStartDate(), form.getEndDate() );
         }
         else {
             throw new IllegalArgumentException( "Unrecognised aggregation option" );
@@ -452,14 +452,50 @@ public class ContributionAnalysisService {
         private final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser;
 
         private final Map<String, FileContributions>             contributionsPerFile;
+        
+        private final Instant startDate;
+        
+        private final Instant endDate;
+        
+        public ContributionsSummaries (final String startDate, final String endDate) {
+        	if ( null != startDate && null != endDate ) {
+
+                final DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
+                final TemporalAccessor start = formatter.parse( startDate );
+                final TemporalAccessor end = formatter.parse( endDate );
+                this.startDate = Instant.from( start );
+                this.endDate = Instant.from( end );
+            }
+            else {
+            	this.startDate = null;
+            	this.endDate = null;
+            }
+        	this.contributionsPerCommit = null;
+        	this.commitsPerUser = null;
+        	this.contributionsPerFile = null;
+        	
+        }
 
         public ContributionsSummaries ( final Map<GHCommit, ChangeSummariesList> contributionsPerCommit,
                 final Map<GitUser, List<DisplayCommit>> commitsPerUser,
-                final Map<String, FileContributions> contributionsPerFile ) {
+                final Map<String, FileContributions> contributionsPerFile, final String startDate, final String endDate ) {
             super();
             this.contributionsPerCommit = contributionsPerCommit;
             this.commitsPerUser = commitsPerUser;
             this.contributionsPerFile = contributionsPerFile;
+            
+            if ( null != startDate && null != endDate ) {
+
+                final DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
+                final TemporalAccessor start = formatter.parse( startDate );
+                final TemporalAccessor end = formatter.parse( endDate );
+                this.startDate = Instant.from( start );
+                this.endDate = Instant.from( end );
+            }
+            else {
+            	this.startDate = null;
+            	this.endDate = null;
+            }
 
         }
 
@@ -473,6 +509,14 @@ public class ContributionAnalysisService {
 
         public Map<String, FileContributions> getContributionsPerFile () {
             return contributionsPerFile;
+        }
+        
+        public Instant getStartDate() {
+        	return this.startDate;
+        }
+        
+        public Instant getEndDate() {
+        	return this.endDate;
         }
 
     }
@@ -513,12 +557,18 @@ public class ContributionAnalysisService {
         private final Map<String, Map<GitUser, Double>> changesPerFile;
         
         private final String repo;
+        
+        private final Instant startDate;
+        
+        private final Instant endDate;
 
         public ContributionsSummariesAPIData ( final Map<GitUser, ChangeSummariesList> changesPerUser,
-                final Map<String, Map<GitUser, Double>> percentageContributionPerFile, final String repo ) {
+                final Map<String, Map<GitUser, Double>> percentageContributionPerFile, final String repo, final Instant startDate, final Instant endDate) {
             this.changesPerUser = changesPerUser;
             this.changesPerFile = percentageContributionPerFile;
             this.repo = repo;
+            this.startDate = startDate;
+            this.endDate = endDate;
         }
 
         public Map<GitUser, ChangeSummariesList> getChangesPerUser () {
@@ -532,6 +582,15 @@ public class ContributionAnalysisService {
 		public String getRepo() {
 			return repo;
 		}
+
+		public Instant getStartDate() {
+			return startDate;
+		}
+		
+		public Instant getEndDate() {
+			return endDate;
+		}
+
         
     }
 

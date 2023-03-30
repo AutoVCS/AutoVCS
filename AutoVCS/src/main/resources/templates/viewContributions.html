@@ -118,10 +118,8 @@
 															}
 														}
 														
-														
-														
+														/* Build the chart configuration */
 														const ctx = document.getElementById('myChart');
-
 
 														var barOptions_stacked = {
 														    tooltips: {
@@ -172,12 +170,9 @@
 														datasets = [];
 														
 														colours = ["red", "green", "blue", "yellow", "purple", "orange", "black"];
-														
-														
+																											
 														var idx = 0;
-														
 														for (const [key, value] of Object.entries(contribsPerUser)) {
-															
 															datasets.push({
 																data: value,
 																label: key,
@@ -190,6 +185,7 @@
 															
 														}
 														
+														/* Build the chart */
 														var myChart = new Chart(ctx, {
 														    type: 'horizontalBar',
 														    data: {
@@ -200,10 +196,7 @@
 
 														    options: barOptions_stacked,
 														});
-														
-														
-														
-														
+
 														$scope.displayContribs = true;
 													},
 													function(error) {
@@ -212,12 +205,6 @@
 													});
 								}
 								
-								
-
-
-								
-								
-
 							});
 			/*]]>*/
 		</script>

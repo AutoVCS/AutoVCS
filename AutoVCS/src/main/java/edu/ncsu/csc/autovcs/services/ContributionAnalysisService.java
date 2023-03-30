@@ -41,26 +41,100 @@ import edu.ncsu.csc.autovcs.models.persistent.GHCommit.DisplayCommit;
 import edu.ncsu.csc.autovcs.models.persistent.GHRepository;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
 
+/**
+ * Main logic class of the AutoVCS application.  This class handles traversing a Git repository (from metadata previously extracted from GitHub via its API, and stored in a local database) and creating summaries of what each user has contributed.
+ * 
+ * <code>createUnaggregatedDiffs()</code> implements the following algorithm:
+ * <pre>
+ *  \State $R1\gets$ \texttt{clone(repo)}
+      \State $R2\gets$ \texttt{clone(repo)}
+      \State $ContribsByCommit \gets \{\}$
+      \For{\texttt{commit c in r}}
+        \If{\texttt{c.parent} is \texttt{null} or \texttt{c.isMergeCommit} or \texttt{c.isOutOfTimeWindow}}
+          \State continue
+        \EndIf
+        \State $ContribsForCommit \gets \{\}$
+        \State Check out $R1$ to \texttt{c}
+        \State Check out $R2$ to \texttt{c.parent}
+        \For{\texttt{ChangedFile} in \texttt{c.ChangedFiles}}
+          \State $AstNew \gets$ \texttt{buildAST(R1.ChangedFile)}\Comment{Build an AST representing the new version of the file}
+          \State $AstOld \gets$ \texttt{buildAST(R2.ChangedFile)}\Comment{Build an AST representing the old version of the file}
+          \State $ContribsForFile \gets$ \texttt{diff(AstNew, AstOld)}\Comment{Compute an edit script between ASTs to identify contributions}
+          \State \texttt{ContribsForCommit.insert( ContribsForFile)}
+        \EndFor
+        \State \texttt{ContribsByCommit.insert(c, ContribsForCommit)}\Comment{Map each commit to the changes made as part of it}
+      \EndFor
+      \State $ByUser \gets$ \texttt{summarise(ContribsByCommit)}\Comment{Summarise changes per-user, to show changes across files and commits}
+      \State \texttt{return ContribsByUser}
+    </pre>
+    
+    To present higher-level summaries of changes, <code>aggregateByUser()</code> implements the following algorithm:
+    <pre>
+    \State $ContribsPerUser \gets \{\}$
+      \For{\texttt{(commit, contribs) in ContribsByCommit}} \Comment{For each user, combine contributions}
+        \If{commit.author not in ContribsPerUser}
+          \State \texttt{ContribsPerUser.insert( commit.author, $\{\}$)}
+        \EndIf
+        \State \texttt{ContribsPerUser.insert( commit.author, contribs)} \Comment{Add contributions from this commit to the running tally of contributions for this user}
+      \EndFor
+      \State $SummarisedContribs \gets \{\}$
+      \For{\texttt{user, contribs in ContribsPerUser}} \Comment{Summarise and weight contributions for each user}
+        \State $UserContribScore \gets 0$
+        \State $UserContribSummary \gets \{\}$
+        \For{\texttt{contrib in contribs}}
+          \State \texttt{UserContribSummary.insert( label( contrib.type), existingCount+1)} \Comment{Summarises detailed edit operations into higher-level contribution type}
+          \State \texttt{UserContribScore += weight(contrib.type)} \Comment{Computes weighted score for user based on type of contribution}
+      
+        \EndFor
+        \State \texttt{SummarisedContribs.insert(user, \{UserContribScore, UserContribSummary\})}
+      \EndFor
+      \State \texttt{return SummarisedContribs}
+    </pre>
+    
+    Finally, <code>getContributionSummaries</code> is a brief wrapper method to handle JSON data serialisation for the API endpoint, and several helper classes provide intermediate data structures for storing partially and fully summarised data.
+ * @author Kai Presler-Marshall
+ *
+ */
 @Component
 public class ContributionAnalysisService {
 
+	/**
+	 * Autowired service for providing access to GitHub repositories
+	 */
     @Autowired
     private GHRepositoryService     repositoryService;
 
+    /**
+     * Autowired service for providing access to GitHub commits
+     */
     @Autowired
     private GHCommitService         commitService;
 
+    /**
+     * Autowired service for providing access to files changed on GitHub commits
+     */
     @Autowired
     private GHFileService           fileService;
 
     @Autowired
     private APIRepositoryController apiCtrl;
 
-    public String getContributionSummaries ( final ContributionsSummaryForm form ) throws Exception {
-        return write( aggregateByUser( form ) );
+    /**
+     * Wraps around the summaries to create a method that provides JSON data for the API endpoints.
+     * @param csf Form describing the details of the summaries to be produced
+     * @return JSON data that represents summaries for a repository & time window
+     * @throws Exception
+     */
+    public String getContributionSummaries ( final ContributionsSummaryForm csf ) throws Exception {
+        return write( aggregateByUser( csf ) );
 
     }
 
+    /**
+     * Creates fully-summarised data by user
+     * @param csf Form describing the details of the summaries to be produced
+     * @return {@link edu.ncsu.csc.autovcs.services.ContributionAnalysisService.ContributionsSummariesAPIData} Summary for the API, showing contributions per user, a contributions by file, and a list of commits for each user
+     */
     public ContributionsSummariesAPIData aggregateByUser ( final ContributionsSummaryForm csf ) {
 
         final ContributionsSummaries summaries = createUnaggregatedDiffs( csf );
@@ -427,55 +501,109 @@ public class ContributionAnalysisService {
 
     }
 
+    /**
+     * Extends {@link ch.uzh.ifi.seal.changedistiller.api.ChangeSummariesList} to track not just the detailed summaries
+     * from the program analysis, but to supplement it with a list of commits (for each user) as well.
+     * @author Kai Presler-Marshall
+     *
+     */
     public static final class ChangeSummariesList extends ch.uzh.ifi.seal.changedistiller.api.ChangeSummariesList {
 
+    	/**
+    	 * List of commits associated with the summarised changes
+    	 */
         private List<GHCommit.DisplayCommit> commits = new ArrayList<GHCommit.DisplayCommit>();
 
+        /**
+         * Creates a ChangeSummariesList from a list of individual changes
+         * @param changes
+         */
         public ChangeSummariesList ( final List<ChangeSummary> changes ) {
             super( changes );
         }
 
+        /**
+         * Tracks the commits associated with this ChangeSummariesList
+         * TODO: Why is this method separate from the constructor?  This should be initialised alongside the ChangeSummaries there
+         * @param commits Commits that are associated with the summaries thereof
+         */
         private void setCommits ( final List<GHCommit.DisplayCommit> commits ) {
             this.commits = commits;
         }
 
+        /**
+         * Returns the list of {@link edu.ncsu.csc.autovcs.models.persistent.GHCommit.DisplayCommit} associated with this ChangeSummaries.
+         * @return
+         */
         public List<GHCommit.DisplayCommit> getCommits () {
             return this.commits;
         }
 
     }
 
+    /**
+     * Represents a partially-summarised view of a repository before final processing for the frontend.  In particular, this view of the data has not yet
+     * aggregated together all summaries on a user-by-user basis.
+     * 
+     * contributionsPerCommit maps a {@link edu.ncsu.csc.autovcs.models.persistent.GHCommit.DisplayCommit} to the contributions associated specifically with that commit; before the display of the information, summaries should be made *across* commits for a user, rather than per-commit.
+     * 
+     * commitsPerUser maps each {@link edu.ncsu.csc.autovcs.models.persistent.GitUser} on a repository to the commits they have authored during a time window.
+     * 
+     * contributionsPerFile maps each file changed (represented by the filename) to a summary of the contributions made by each user (see {@link edu.ncsu.csc.autovcs.services.ContributionAnalysisService.FileContributions} for more information).
+     * 
+     * startDate tracks the start date, if any, associated with this summary
+     * 
+     * endDate tracks the end date, if any, associated with this summary
+     * 
+     * @author Kai Presler-Marshall
+     *
+     */
     public static final class ContributionsSummaries {
 
+    	/**
+    	 * Maps each commit to a summary of the changes made on that commit (across the possibly various files associated with it)
+    	 */
         private final Map<GHCommit, ChangeSummariesList>         contributionsPerCommit;
 
+        /**
+         * Maps each user ({@link edu.ncsu.csc.autovcs.models.persistent.GitUser} to a list of formatted commits ({@link edu.ncsu.csc.autovcs.models.persistent.GHCommit.DisplayCommit}) they have authored.  
+         */
         private final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser;
 
+        /**
+         * Maps each changed file (by filename) to a numeric summary of the contributions made to that file.
+         */
         private final Map<String, FileContributions>             contributionsPerFile;
         
+        /**
+         * End date for time window summarised.
+         */
         private final Instant startDate;
         
+        /**
+         * Start date for time window summarised.
+         */
         private final Instant endDate;
         
+        /**
+         * This constructor builds a "Contributions Summary" when there really were no contributions to summarise.  Instead, this summary is used by the frontend to indicate that there *were no* summaries present, and just displays the time window the "summary" was for.
+         * @param startDate Start date for attempted summaries time window.
+         * @param endDate End date for attempted summaries time window.
+         */
         public ContributionsSummaries (final String startDate, final String endDate) {
-        	if ( null != startDate && null != endDate ) {
-
-                final DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
-                final TemporalAccessor start = formatter.parse( startDate );
-                final TemporalAccessor end = formatter.parse( endDate );
-                this.startDate = Instant.from( start );
-                this.endDate = Instant.from( end );
-            }
-            else {
-            	this.startDate = null;
-            	this.endDate = null;
-            }
-        	this.contributionsPerCommit = null;
-        	this.commitsPerUser = null;
-        	this.contributionsPerFile = null;
-        	
+            this(new HashMap<GHCommit, ChangeSummariesList>(),
+                    new HashMap<GitUser, List<DisplayCommit>>(),
+                    new HashMap<String, FileContributions>(), startDate, endDate);
         }
 
+        /**
+         * Creates a full ContributionsSummaries object, storing all associated information.
+         * @param contributionsPerCommit
+         * @param commitsPerUser
+         * @param contributionsPerFile
+         * @param startDate
+         * @param endDate
+         */
         public ContributionsSummaries ( final Map<GHCommit, ChangeSummariesList> contributionsPerCommit,
                 final Map<GitUser, List<DisplayCommit>> commitsPerUser,
                 final Map<String, FileContributions> contributionsPerFile, final String startDate, final String endDate ) {
@@ -521,17 +649,38 @@ public class ContributionAnalysisService {
 
     }
 
+    /**
+     * Represents contributions to an individual file.  Tracks both the overall magnitude of changes made to the file across all users, and the changes made to the file per-user, which are then used to calcualte relative percentages for each user.
+     * 
+     * @author Kai Presler-Marshall
+     *
+     */
     public static final class FileContributions {
+    	
+    	/**
+    	 * Sum of all contributions (from the *Total Score* from the program analysis) made to a given file
+    	 */
         private Integer                     overallScore;
 
+        /**
+         * Map from each user to the sum of their contributions to the file
+         */
         private final Map<GitUser, Integer> contributionPerUser;
 
+        /**
+         * Creates a new FileContributions, tracking the total score as 0 and setting no contributions per user
+         */
         public FileContributions () {
             overallScore = 0;
             contributionPerUser = new HashMap<GitUser, Integer>();
 
         }
 
+        /**
+         * Records a contribution to a given file, incrementing the contributions for the user specified & the sum across all users
+         * @param who Who has made the contributions
+         * @param contributionScore The extent of the contributions made
+         */
         public void addContribution ( final GitUser who, final Integer contributionScore ) {
             if ( !contributionPerUser.containsKey( who ) ) {
                 contributionPerUser.put( who, 0 );
@@ -550,18 +699,54 @@ public class ContributionAnalysisService {
 
     }
 
+    /**
+     * Represents a summary of contributions made as sent over the API to the frontend.  This includes two high-level summaries of the information:
+     * changesPerUser tracks per-user, showing both results of the program analysis techniques and a summary of the Git commits made
+     * changesPerFile shows on a file-by-file basis who has been most heavily involved with each file, using the high-level contributions score
+     * from the changesPerUser
+     * 
+     * repo tracks the name of the repository to display on the batch-generated pages
+     * startDate tracks the start of the time window specified, if any
+     * endDate tracks the end of the time window specified, if any
+     * 
+     * @author Kai Presler-Marshall
+     *
+     */
     public static final class ContributionsSummariesAPIData {
 
+    	/**
+    	 * Maps each user (as a {@link edu.ncsu.csc.autovcs.models.persistent.GitUser} to the contributions they have made {@link edu.ncsu.csc.autovcs.services.ContributionAnalysisService.ChangeSummariesList}.  These summaries include both the program analysis results, showing multi-level views of contributions, and a list of the individual commits they have authored.
+    	 */
         private final Map<GitUser, ChangeSummariesList> changesPerUser;
 
+        /**
+         * Maps each file changed (by filename) to a map of who has touched it, and their relative contributions to the file.
+         */
         private final Map<String, Map<GitUser, Double>> changesPerFile;
         
+        /**
+         * Name of the repository
+         */
         private final String repo;
         
+        /**
+         * End date for the contributions summary, if any
+         */
         private final Instant startDate;
         
+        /**
+         * Start date for the contributions summary, if any
+         */
         private final Instant endDate;
 
+        /**
+         * All-arguments constructor
+         * @param changesPerUser Map of changes made by each user
+         * @param percentageContributionPerFile Map from each filename to who has changed the file
+         * @param repo Name of the repository the summaries are on
+         * @param startDate Start date of the window for the summaries
+         * @param endDate End date of the window for the summaries
+         */
         public ContributionsSummariesAPIData ( final Map<GitUser, ChangeSummariesList> changesPerUser,
                 final Map<String, Map<GitUser, Double>> percentageContributionPerFile, final String repo, final Instant startDate, final Instant endDate) {
             this.changesPerUser = changesPerUser;

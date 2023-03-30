@@ -21,10 +21,21 @@ import edu.ncsu.csc.autovcs.models.persistent.GHRepository;
 import edu.ncsu.csc.autovcs.models.persistent.GitUser;
 import edu.ncsu.csc.autovcs.repositories.GHPullRequestRepository;
 
+/**
+ * Provides database access to GitHub Pull Requests, and allows building
+ * a simplified representation thereof from the information in the GitHub API.
+ * NOTE: Currently, while AutoVCS allows you to extract this information from
+ * GitHub, it's not actually used for any part of the contributions summaries.
+ * This is left as a TODO: for when yours truly has time to figure out how it 
+ * might be interesting.
+ * @author Kai Presler-Marshall
+ *
+ */
 @Component
 @Transactional
 public class GHPullRequestService extends Service<GHPullRequest, Long> {
 
+	/** Provides access to the DB for CRUD tasks */
     @Autowired
     private GHPullRequestRepository repository;
 

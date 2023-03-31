@@ -118,6 +118,9 @@ public class ContributionAnalysisService {
 
     @Autowired
     private APIRepositoryController apiCtrl;
+    
+    @Autowired
+    private JGitService gitService;
 
     /**
      * Wraps around the summaries to create a method that provides JSON data for the API endpoints.
@@ -395,16 +398,10 @@ public class ContributionAnalysisService {
                             "[" + Thread.currentThread().getName() + "] Couldn't delete b.lock" + e.getClass() );
                 }
 
-                final Git vA = Git.open( a );
-                final Git vB = Git.open( b );
+                
+                gitService.safeCheckout(aPath, commit.getSha1(), null);
+                gitService.safeCheckout(bPath, commit.getParent(), null);
 
-                vA.checkout().setName( commit.getSha1() ).call();
-
-                vB.checkout().setName( commit.getParent() ).call();
-
-                vA.close();
-
-                vB.close();
 
                 /* Wait for filesystem to catch up */
 

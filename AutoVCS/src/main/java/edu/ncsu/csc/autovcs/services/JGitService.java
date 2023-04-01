@@ -65,8 +65,10 @@ public class JGitService {
 			File aPath = new File(repositoryLocation);
 
 			try (Git vA = Git.open(aPath);) {
-				vA.checkout().setName(commit).call();
+				String branchName = vA.getRepository().getFullBranch();
+				vA.checkout().setName(branchName).setStartPoint(commit).setForced(true).call();
 			} catch (InvalidPathException|GitAPIException e) {
+				e.printStackTrace();
 				partialCheckout(repositoryLocation, commit, filesOnCommit);
 			}
 
@@ -76,7 +78,7 @@ public class JGitService {
 
 	private void partialCheckout(String repositoryLocation, String commit, List<String> filesOnCommit)
 			throws IOException {
-		try (Repository existingRepo = new FileRepositoryBuilder().setGitDir(new File(repositoryLocation + ".git"))
+		try (Repository existingRepo = new FileRepositoryBuilder().setGitDir(new File(repositoryLocation + "/.git"))
 				.build();) {
 
 
@@ -101,7 +103,7 @@ public class JGitService {
 			// we'll massage and fix those as part of the loop
 			createTemporaryIndexForContent(existingRepo, existingContents, stateEditor);
 
-			String base = repositoryLocation;
+			String base = repositoryLocation + "/";
 
 			for (String file : existingContents.keySet()) {
 				ObjectId idOfFile = existingRepo.resolve(":" + file);
@@ -152,7 +154,7 @@ public class JGitService {
 	}
 
 	private boolean nameIsIllegal(final String fileName) {
-		return fileName.contains(":") || fileName.contains(":") || fileName.endsWith(" ") || fileName.startsWith(" ") || true;
+		return fileName.contains(":") || fileName.contains(":") || fileName.endsWith(" ") || fileName.startsWith(" ");
 	}
 
 	private String correct(final String fileName) {

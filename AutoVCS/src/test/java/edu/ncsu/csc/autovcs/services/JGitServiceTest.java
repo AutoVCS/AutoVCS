@@ -151,6 +151,9 @@ public class JGitServiceTest {
 		Assertions.assertEquals("public interface Cloneable {",
 				cloneableContents.get(0));
 		
+		// The change introduced in the next commit shouldn't be here
+		Assertions.assertFalse(cloneableContents.contains("	public Object shallowClone();"));
+		
 
 		service.safeCheckout(testContentsPath + repoName, "cc33c2b0772607c422c69a27ab27bbe4f8314d96", filesChanged);
 		
@@ -162,7 +165,7 @@ public class JGitServiceTest {
 
 		Assertions.assertEquals("public interface Cloneable {",
 				cloneableContents.get(0));
-		Assertions.assertEquals("public Object shallowClone();",
+		Assertions.assertEquals("	public Object shallowClone();",
 				cloneableContents.get(4));
 
 	}

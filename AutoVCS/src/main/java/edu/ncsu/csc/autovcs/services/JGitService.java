@@ -1,7 +1,6 @@
 package edu.ncsu.csc.autovcs.services;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +22,7 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -106,13 +106,8 @@ public class JGitService {
 			String base = repositoryLocation + "/";
 
 			for (String file : existingContents.keySet()) {
-				ObjectId idOfFile = existingRepo.resolve(":" + file);
-
-				ObjectLoader fileLoader = existingRepo.open(idOfFile);
-				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				fileLoader.copyTo(out);
-
-				String newContents = out.toString();
+				
+				String newContents = getContent(existingRepo, c, file);
 
 				String newFileName = file;
 				boolean added = false;
@@ -265,7 +260,7 @@ public class JGitService {
 		}
 	}
 
-	static private RevTree getRevTree(RevWalk revWalk, RevCommit commit) {
+	private RevTree getRevTree(RevWalk revWalk, RevCommit commit) {
 		try {
 			return revWalk.parseTree(commit.getTree().getId());
 		} catch (IOException e) {
@@ -274,5 +269,24 @@ public class JGitService {
 			throw new RuntimeException(message, e);
 		}
 	}
+	
+	/**
+	 * credit to https://stackoverflow.com/a/47850713
+	 * @param repository
+	 * @param commit
+	 * @param path
+	 * @return
+	 * @throws IOException
+	 */
+	private String getContent(Repository repository, RevCommit commit, String path) throws IOException {
+		  try (TreeWalk treeWalk = TreeWalk.forPath(repository, path, commit.getTree())) {
+		    ObjectId blobId = treeWalk.getObjectId(0);
+		    try (ObjectReader objectReader = repository.newObjectReader()) {
+		      ObjectLoader objectLoader = objectReader.open(blobId);
+		      byte[] bytes = objectLoader.getBytes();
+		      return new String(bytes, StandardCharsets.UTF_8);
+		    }
+		  }
+		}
 
 }

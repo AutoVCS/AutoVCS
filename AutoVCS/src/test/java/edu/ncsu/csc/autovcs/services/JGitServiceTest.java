@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -36,15 +39,13 @@ public class JGitServiceTest {
 	private JGitService service;
 
 	@BeforeEach
-	public void setup() {
-		File contents = new File("test-contents/");
-		contents.delete();
+	public void setup() throws Exception {
+		deleteDirectory("test-contents/");
 	}
 
 	@AfterAll
-	static public void cleanup() {
-		File contents = new File("test-contents/");
-		contents.delete();
+	static public void cleanup() throws Exception {
+		deleteDirectory("test-contents/");
 	}
 
 	@Test
@@ -165,5 +166,17 @@ public class JGitServiceTest {
 				cloneableContents.get(4));
 
 	}
+	
+	
+	static private void deleteDirectory(String directoryName) throws IOException {
+		try (Stream<Path> dirStream = Files.walk(Paths.get(directoryName))) {
+		    dirStream
+		        .map(Path::toFile)
+		        .sorted(Comparator.reverseOrder())
+		        .forEach(File::delete);
+		}
+	}
+	
+	
 
 }

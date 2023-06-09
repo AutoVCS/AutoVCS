@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +59,10 @@ public class JGitService {
 	 */
 	public void safeCheckout(String repositoryLocation, String commit, List<String> filesOnCommit) throws IOException {
 
+		if (null == commit) {
+			return ;
+		}
+		
 		String os = System.getProperty("os.name");
 		if (os.contains("Windows") && containsUnsafeFile(filesOnCommit)) {
 			partialCheckout(repositoryLocation, commit, filesOnCommit);
@@ -66,9 +72,23 @@ public class JGitService {
 
 			try (Git vA = Git.open(aPath);) {
 				String branchName = vA.getRepository().getFullBranch();
-				vA.checkout().setName(branchName).setStartPoint(commit).setForced(true).call();
-			} catch (InvalidPathException|GitAPIException e) {
-				e.printStackTrace();
+				
+				Repository existingRepo = new FileRepositoryBuilder().setGitDir(new File(repositoryLocation + "/.git"))
+						.build();
+				
+				RevWalk revisionWalker = new RevWalk(existingRepo);
+				
+				ObjectId commitId = ObjectId.fromString(commit);
+				
+				RevCommit rc = revisionWalker.parseCommit(commitId);
+				
+				
+				vA.checkout().setStartPoint(rc).setForced(true).call();
+				
+				
+				
+			} catch (InvalidPathException|GitAPIException|java.nio.file.InvalidPathException e) {
+				//e.printStackTrace();
 				partialCheckout(repositoryLocation, commit, filesOnCommit);
 			}
 
@@ -116,7 +136,11 @@ public class JGitService {
 					added = true;
 				}
 
-				Files.write(Paths.get(base + newFileName), newContents.getBytes());
+				Path dest = Paths.get(base + newFileName);
+				
+				Files.createDirectories(dest.getParent(), new FileAttribute[] {});
+				
+				Files.write(dest, newContents.getBytes());
 
 				/*
 				 * Need to know how big the file is. We can pull that directly from the BOAS

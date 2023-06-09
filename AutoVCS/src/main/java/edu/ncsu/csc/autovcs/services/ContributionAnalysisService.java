@@ -322,11 +322,11 @@ public class ContributionAnalysisService {
 
             git = Git.cloneRepository().setURI( String.format( "%s/%s/%s", url, organisation, repo ) )
                     .setCredentialsProvider( new UsernamePasswordCredentialsProvider( username, password ) )
-                    .setDirectory( a ).call();
+                    .setDirectory( a ).setNoCheckout(true).call();
 
             git2 = Git.cloneRepository().setURI( String.format( "%s/%s/%s", url, organisation, repo ) )
                     .setCredentialsProvider( new UsernamePasswordCredentialsProvider( username, password ) )
-                    .setDirectory( b ).call();
+                    .setDirectory( b ).setNoCheckout(true).call();
         }
         catch ( final Exception e ) {
             e.printStackTrace();
@@ -346,13 +346,13 @@ public class ContributionAnalysisService {
         final Map<GitUser, List<GHCommit.DisplayCommit>> commitsPerUser = new HashMap<GitUser, List<GHCommit.DisplayCommit>>();
 
         final Map<String, FileContributions> contributionsPerFile = new HashMap<String, FileContributions>();
+        
+        /* Sort Oldest ---> Newest; this means that we'll always start at the beginning of time & then go towards the future; handles the edge case of the commit with no parents by comparing it against an empty directory, which is precisely what we want */
+        commits.sort((first, second) -> first.getCommitDate().compareTo(second.getCommitDate()));
 
         commits.forEach( commit -> {
             if ( commit.isMergeCommit() ) {
                 return; // don't look at merges
-            }
-            if ( null == commit.getParent() ) {
-                return; // skip first commit
             }
 
             /* Check date bounds, if provided */
@@ -399,8 +399,11 @@ public class ContributionAnalysisService {
                 }
 
                 
-                gitService.safeCheckout(aPath, commit.getSha1(), null);
-                gitService.safeCheckout(bPath, commit.getParent(), null);
+                List<String> filesChanged = commit.getFiles().stream().map(e -> e.getFilename()).toList();
+                
+                gitService.safeCheckout(aPath, commit.getSha1(), filesChanged);
+                /* To calculate the difference between A and AParent, we only care about the files that got changed on A itself -- anything that was touched only on AParent (B) doesn't matter */
+                gitService.safeCheckout(bPath, commit.getParent(), filesChanged);
 
 
                 /* Wait for filesystem to catch up */

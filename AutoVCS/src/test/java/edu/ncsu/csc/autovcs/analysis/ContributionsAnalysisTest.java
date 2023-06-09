@@ -5,9 +5,9 @@ import java.util.Map;
 import javax.sql.DataSource;
 import javax.transaction.Transactional;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -43,7 +43,7 @@ public class ContributionsAnalysisTest {
     private static final String         CM  = "AutoVCS-CoffeeMaker";
     private static final String         TU  = "AutoVCS-MultiUserProject";
 
-    @Before
+    @BeforeEach
     public void setup () {
         DBUtils.resetDB( ds );
     }
@@ -71,11 +71,11 @@ public class ContributionsAnalysisTest {
          * Only one user should show up here, b/c other users have only made
          * merge commits
          */
-        Assert.assertEquals( 1, aggregatedChanges.size() );
+        Assertions.assertEquals( 1, aggregatedChanges.size() );
 
         final GitUser kai = userService.findByEmailContaining( "kpresle@ncsu.edu" ).get( 0 );
         final ChangeSummariesList kaiContributions = aggregatedChanges.get( kai );
-        Assert.assertEquals( 14232, (int) kaiContributions.getContributionsScore() );
+        Assertions.assertEquals( 14232, (int) kaiContributions.getContributionsScore() );
 
     }
 
@@ -97,7 +97,7 @@ public class ContributionsAnalysisTest {
 
         final GitUser kai = userService.findByEmailContaining( "kpresle@ncsu.edu" ).get( 0 );
         final ChangeSummariesList kaiContributions = aggregatedChanges.get( kai );
-        Assert.assertEquals( 2165, (int) kaiContributions.getContributionsScore() );
+        Assertions.assertEquals( 2165, (int) kaiContributions.getContributionsScore() );
     }
 
     @Test
@@ -115,7 +115,7 @@ public class ContributionsAnalysisTest {
         final Map<GitUser, ChangeSummariesList> aggregatedChanges = cas.aggregateByUser( csf ).getChangesPerUser();
 
         /* Two users on the project, both should show up */
-        Assert.assertEquals( 2, aggregatedChanges.size() );
+        Assertions.assertEquals( 2, aggregatedChanges.size() );
 
         /*
          * Both users should have been created during the analysis...if not,
@@ -124,13 +124,13 @@ public class ContributionsAnalysisTest {
         final GitUser a = userService.findByNameContaining( "User A" ).get( 0 );
         final GitUser b = userService.findByNameContaining( "User B" ).get( 0 );
 
-        Assert.assertNotNull( a );
-        Assert.assertNotNull( b );
+        Assertions.assertNotNull( a );
+        Assertions.assertNotNull( b );
 
         final ChangeSummariesList aChanges = aggregatedChanges.get( a );
 
         /* Two ChangeSummary objects, one for each class */
-        Assert.assertEquals( 2, aChanges.getChanges().size() );
+        Assertions.assertEquals( 2, aChanges.getChanges().size() );
 
         final ChangeSummary ClassB = aChanges.getChanges().get( 0 );
         /**
@@ -145,16 +145,16 @@ public class ContributionsAnalysisTest {
          * </pre>
          */
 
-        Assert.assertEquals( JavaEntityType.ASSIGNMENT, ClassB.getAllChanges().get( 0 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.THEN_STATEMENT,
+        Assertions.assertEquals( JavaEntityType.ASSIGNMENT, ClassB.getAllChanges().get( 0 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.THEN_STATEMENT,
                 ClassB.getAllChanges().get( 1 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.IF_STATEMENT,
+        Assertions.assertEquals( JavaEntityType.IF_STATEMENT,
                 ClassB.getAllChanges().get( 2 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.RETURN_STATEMENT,
+        Assertions.assertEquals( JavaEntityType.RETURN_STATEMENT,
                 ClassB.getAllChanges().get( 3 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.METHOD, ClassB.getAllChanges().get( 4 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.FIELD, ClassB.getAllChanges().get( 5 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.CLASS, ClassB.getAllChanges().get( 6 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.METHOD, ClassB.getAllChanges().get( 4 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.FIELD, ClassB.getAllChanges().get( 5 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.CLASS, ClassB.getAllChanges().get( 6 ).getChangedEntity().getType() );
 
         final ChangeSummary ClassA = aChanges.getChanges().get( 1 );
         /**
@@ -169,22 +169,22 @@ public class ContributionsAnalysisTest {
          * </pre>
          */
 
-        Assert.assertEquals( JavaEntityType.BLOCK_COMMENT,
+        Assertions.assertEquals( JavaEntityType.BLOCK_COMMENT,
                 ClassA.getAllChanges().get( 0 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.ASSIGNMENT, ClassA.getAllChanges().get( 1 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.ASSIGNMENT, ClassA.getAllChanges().get( 2 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.METHOD, ClassA.getAllChanges().get( 3 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.FIELD, ClassA.getAllChanges().get( 4 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.FIELD, ClassA.getAllChanges().get( 5 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.CLASS, ClassA.getAllChanges().get( 6 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.ASSIGNMENT, ClassA.getAllChanges().get( 1 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.ASSIGNMENT, ClassA.getAllChanges().get( 2 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.METHOD, ClassA.getAllChanges().get( 3 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.FIELD, ClassA.getAllChanges().get( 4 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.FIELD, ClassA.getAllChanges().get( 5 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.CLASS, ClassA.getAllChanges().get( 6 ).getChangedEntity().getType() );
 
         /* Check overall score too */
-        Assert.assertEquals( 299, (int) aChanges.getContributionsScore() );
+        Assertions.assertEquals( 299, (int) aChanges.getContributionsScore() );
 
         final ChangeSummariesList bChanges = aggregatedChanges.get( b );
 
         /* Only a single ChangeSummary, b/c the only touched one class */
-        Assert.assertEquals( 1, bChanges.getChanges().size() );
+        Assertions.assertEquals( 1, bChanges.getChanges().size() );
 
         final ChangeSummary bChange = bChanges.getChanges().get( 0 );
 
@@ -214,19 +214,19 @@ public class ContributionsAnalysisTest {
          * </pre>
          */
 
-        Assert.assertEquals( JavaEntityType.METHOD_INVOCATION,
+        Assertions.assertEquals( JavaEntityType.METHOD_INVOCATION,
                 bChange.getAllChanges().get( 0 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.ANNOTATION, bChange.getAllChanges().get( 1 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.METHOD_INVOCATION,
+        Assertions.assertEquals( JavaEntityType.ANNOTATION, bChange.getAllChanges().get( 1 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.METHOD_INVOCATION,
                 bChange.getAllChanges().get( 2 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.ANNOTATION, bChange.getAllChanges().get( 3 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.METHOD, bChange.getAllChanges().get( 4 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.METHOD, bChange.getAllChanges().get( 5 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.FIELD, bChange.getAllChanges().get( 6 ).getChangedEntity().getType() );
-        Assert.assertEquals( JavaEntityType.CLASS, bChange.getAllChanges().get( 7 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.ANNOTATION, bChange.getAllChanges().get( 3 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.METHOD, bChange.getAllChanges().get( 4 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.METHOD, bChange.getAllChanges().get( 5 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.FIELD, bChange.getAllChanges().get( 6 ).getChangedEntity().getType() );
+        Assertions.assertEquals( JavaEntityType.CLASS, bChange.getAllChanges().get( 7 ).getChangedEntity().getType() );
 
         /* Check overall score too */
-        Assert.assertEquals( 172, (int) bChanges.getContributionsScore() );
+        Assertions.assertEquals( 172, (int) bChanges.getContributionsScore() );
 
     }
 
@@ -259,7 +259,7 @@ public class ContributionsAnalysisTest {
         final Map<GitUser, ChangeSummariesList> aggregatedChanges = cas.aggregateByUser( csf ).getChangesPerUser();
 
         /* Two users on the project, both should show up */
-        Assert.assertEquals( 1, aggregatedChanges.size() );
+        Assertions.assertEquals( 1, aggregatedChanges.size() );
 
         /*
          * Both users should have been created during the analysis...if not,
@@ -267,12 +267,12 @@ public class ContributionsAnalysisTest {
          */
         final GitUser a = userService.findByNameContaining( "User A" ).get( 0 );
 
-        Assert.assertNotNull( a );
+        Assertions.assertNotNull( a );
 
         final ChangeSummariesList aChanges = aggregatedChanges.get( a );
 
-        Assert.assertEquals( 299, (int) aChanges.getContributionsScore() );
-        Assert.assertEquals( 100, aChanges.getContributionsScorePercent(), 0 );
+        Assertions.assertEquals( 299, (int) aChanges.getContributionsScore() );
+        Assertions.assertEquals( 100, aChanges.getContributionsScorePercent(), 0 );
 
     }
 

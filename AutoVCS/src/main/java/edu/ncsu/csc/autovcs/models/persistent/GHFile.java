@@ -25,6 +25,7 @@ public class GHFile extends DomainObject {
 
     private int      linesChanged;
 
+    @Column ( columnDefinition = "LONGTEXT" )
     private String   url;
 
     @Column ( columnDefinition = "LONGTEXT" )

@@ -12,9 +12,9 @@ import java.util.Map;
 import javax.sql.DataSource;
 import javax.transaction.Transactional;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -62,7 +62,7 @@ public class APIUserTest {
     @Autowired
     private DataSource            ds;
 
-    @Before
+    @BeforeEach
     public void setup () {
         mvc = MockMvcBuilders.webAppContextSetup( context ).build();
 
@@ -72,7 +72,7 @@ public class APIUserTest {
     @Test
     @Transactional
     public void testCreateUser () throws Exception {
-        Assert.assertEquals( 0, userService.findAll().size() );
+        Assertions.assertEquals( 0, userService.findAll().size() );
 
         final GitUser user = new GitUser();
         user.setName( API_TEST_USER );
@@ -81,14 +81,14 @@ public class APIUserTest {
         mvc.perform( post( "/api/v1/users" ).contentType( MediaType.APPLICATION_JSON )
                 .content( TestUtils.asJsonString( user ) ) ).andExpect( status().isCreated() );
 
-        Assert.assertEquals( 1, userService.findAll().size() );
+        Assertions.assertEquals( 1, userService.findAll().size() );
 
     }
 
     @Test
     @Transactional
     public void testExcludedUsers () throws Exception {
-        Assert.assertEquals( 0, userService.findAll().size() );
+    	Assertions.assertEquals( 0, userService.findAll().size() );
         createUsers( 5, true );
         createUsers( 7, false );
 
@@ -98,21 +98,21 @@ public class APIUserTest {
 
         final List<GitUser> excludedUsersList = TestUtils.gson().fromJson( excludedUsers, List.class );
 
-        Assert.assertEquals( 5, excludedUsersList.size() );
+        Assertions.assertEquals( 5, excludedUsersList.size() );
 
         final String allUsers = mvc.perform( get( "/api/v1/users/" ).contentType( MediaType.APPLICATION_JSON ) )
                 .andExpect( status().isOk() ).andReturn().getResponse().getContentAsString();
 
         final List<GitUser> allUsersList = TestUtils.gson().fromJson( allUsers, List.class );
 
-        Assert.assertEquals( 12, allUsersList.size() );
+        Assertions.assertEquals( 12, allUsersList.size() );
 
     }
 
     @Test
     @Transactional
     public void testIncludeExcludeUsers () throws Exception {
-        Assert.assertEquals( 0, userService.findAll().size() );
+    	Assertions.assertEquals( 0, userService.findAll().size() );
 
         final GitUser user = new GitUser();
         user.setName( API_TEST_USER );
@@ -123,7 +123,7 @@ public class APIUserTest {
 
         List<GitUser> excluded = userService.findExcluded();
 
-        Assert.assertEquals( 1, excluded.size() );
+        Assertions.assertEquals( 1, excluded.size() );
 
         final Long id = (Long) excluded.get( 0 ).getId();
 
@@ -140,11 +140,11 @@ public class APIUserTest {
 
         excluded = userService.findExcluded();
 
-        Assert.assertEquals( 0, excluded.size() );
+        Assertions.assertEquals( 0, excluded.size() );
 
         /* & that the user still exists */
 
-        Assert.assertEquals( 1, userService.findAll().size() );
+        Assertions.assertEquals( 1, userService.findAll().size() );
 
         /* try excluding them again */
         mvc.perform( post( String.format( "/api/v1/users/%d/exclude", id ) ).contentType( MediaType.APPLICATION_JSON ) )
@@ -152,8 +152,8 @@ public class APIUserTest {
 
         excluded = userService.findExcluded();
 
-        Assert.assertEquals( 1, excluded.size() );
-        Assert.assertEquals( 1, userService.findAll().size() );
+        Assertions.assertEquals( 1, excluded.size() );
+        Assertions.assertEquals( 1, userService.findAll().size() );
 
     }
 
@@ -173,7 +173,7 @@ public class APIUserTest {
 
         final List<GitUser> excludedUsersListEmail = TestUtils.gson().fromJson( excludedUsersEmail, List.class );
 
-        Assert.assertEquals( 10, excludedUsersListEmail.size() );
+        Assertions.assertEquals( 10, excludedUsersListEmail.size() );
 
         /* Same by name */
         final String excludedUsersName = mvc
@@ -183,7 +183,7 @@ public class APIUserTest {
 
         final List<GitUser> excludedUsersNameList = TestUtils.gson().fromJson( excludedUsersName, List.class );
 
-        Assert.assertEquals( 10, excludedUsersNameList.size() );
+        Assertions.assertEquals( 10, excludedUsersNameList.size() );
 
         /* If we search by name & email, we shouldn't get duplicates */
         final String excludedUsers = mvc
@@ -193,7 +193,7 @@ public class APIUserTest {
 
         final List<GitUser> excludedUsersList = TestUtils.gson().fromJson( excludedUsers, List.class );
 
-        Assert.assertEquals( 10, excludedUsersList.size() );
+        Assertions.assertEquals( 10, excludedUsersList.size() );
 
         /* Searching on a unique name (or both) should find just one user */
 
@@ -205,7 +205,7 @@ public class APIUserTest {
         final List<GitUser> excludedUsersNameListUnique = TestUtils.gson().fromJson( excludedUsersNameUnique,
                 List.class );
 
-        Assert.assertEquals( 1, excludedUsersNameListUnique.size() );
+        Assertions.assertEquals( 1, excludedUsersNameListUnique.size() );
 
         /* Excluding them should exclude just the one user */
         mvc.perform( post( String.format( "/api/v1/users/%s/name/exclude", API_TEST_USER + "0" ) )
@@ -213,9 +213,9 @@ public class APIUserTest {
 
         List<GitUser> excluded = userService.findExcluded();
 
-        Assert.assertEquals( 1, excluded.size() );
+        Assertions.assertEquals( 1, excluded.size() );
 
-        Assert.assertEquals( 10, userService.findAll().size() );
+        Assertions.assertEquals( 10, userService.findAll().size() );
 
         /* If we exclude by the common email, everyone should be excluded now */
         mvc.perform( post( String.format( "/api/v1/users/%s/both/exclude", API_TEST_EMAIL ) )
@@ -223,9 +223,9 @@ public class APIUserTest {
 
         excluded = userService.findExcluded();
 
-        Assert.assertEquals( 10, excluded.size() );
+        Assertions.assertEquals( 10, excluded.size() );
 
-        Assert.assertEquals( 10, userService.findAll().size() );
+        Assertions.assertEquals( 10, userService.findAll().size() );
 
     }
 
@@ -260,17 +260,17 @@ public class APIUserTest {
 
         repositoryService.save( repo );
 
-        Assert.assertEquals( 20, commitService.findAll().size() );
+        Assertions.assertEquals( 20, commitService.findAll().size() );
 
         final List<GitUser> allUsers = userService.findAll();
 
-        Assert.assertEquals( 20, allUsers.size() );
+        Assertions.assertEquals( 20, allUsers.size() );
 
         final GitUser targetUser = allUsers.get( 0 );
 
         final List<GHCommit> originalCommitsForUser = commitService.findByUser( targetUser );
 
-        Assert.assertEquals( 1, originalCommitsForUser.size() );
+        Assertions.assertEquals( 1, originalCommitsForUser.size() );
 
         allUsers.remove( targetUser );
 
@@ -285,7 +285,7 @@ public class APIUserTest {
 
         /* Single user should "own" all commits now */
         final List<GHCommit> remappedCommits = commitService.findByUser( targetUser );
-        Assert.assertEquals( 20, remappedCommits.size() );
+        Assertions.assertEquals( 20, remappedCommits.size() );
     }
 
     private void createUsers ( final Integer howMany, final boolean excluded ) {

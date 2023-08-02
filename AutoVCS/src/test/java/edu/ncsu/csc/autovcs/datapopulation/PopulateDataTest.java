@@ -18,10 +18,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 import edu.ncsu.csc.autovcs.DBUtils;
 import edu.ncsu.csc.autovcs.TestConfig;
 import edu.ncsu.csc.autovcs.controllers.api.APIRepositoryController;
-import edu.ncsu.csc.autovcs.controllers.api.APIRepositoryController.RepositoryFetchInformation;
 import edu.ncsu.csc.autovcs.forms.PopulateDataForm;
 import edu.ncsu.csc.autovcs.models.persistent.GHRepository;
 import edu.ncsu.csc.autovcs.services.GHRepositoryService;
+import edu.ncsu.csc.autovcs.services.PopulateDataService.RepositoryFetchInformation;
 
 @RunWith ( SpringRunner.class )
 @EnableAutoConfiguration

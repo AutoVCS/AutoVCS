@@ -45,7 +45,7 @@
 							function($scope, $http, $q) {
 
 								$scope.inProgress = false;
-								$scope.progressMessage = "Fetching data....this may take a while";
+								$scope.progressMessage = "Fetching data....this may take a while.  Progress bar will refresh automatically every few seconds until the fetch completes.";
 
 								$scope.success = false;
 
@@ -58,10 +58,21 @@
 								$scope.unableToCheckDuplicates = undefined;
 								
 								$scope.unableToCheckDuplicatesFlag = false;
+								
+								$scope.howManyFetched = 0;
+								$scope.howManyToFetch = 1;
+
+								$scope.getPercentage = function () {
+    								return (($scope.howManyFetched * 100) / $scope.howManyToFetch).toFixed(2);
+								}
+								
+								$scope.getTotal = function () {
+    								return $scope.howManyFetched;
+								}
 
 								$scope.fetch = function() {
 									$scope.success = false;
-									$scope.inProgress = true;
+									$scope.complete = false;
 									$scope.failed = false;
 
 									$scope.errorMessage = "";
@@ -77,30 +88,65 @@
 													$scope.submit)
 											.then(
 													function(response) {
-														$scope.successMessage = "Successfully fetched data for "
-																+ response.data.howManyFetched
-																+ (1 === response.data.howManyFetched ? " repository"
-																		: " repositories");
-														$scope.warning = response.data.reposWithDuplicateUsers;
-														$scope.unableToCheckDuplicates = response.data.unableToCheckDuplicateUsers;
-														
-														$scope.success = true;
-														$scope.inProgress = false;
-														
-														if (!angular.equals($scope.unableToCheckDuplicates, {})){
-															$scope.unableToCheckDuplicatesFlag = true;
-														}
-														else {
-															$scope.unableToCheckDuplicatesFlag = false;
-														}
-
+														$scope.id = response.data;
+														$scope.inProgress = true;
+														update();
 													},
 													function(error) {
-														$scope.errorMessage = error.data.message;
-														$scope.failed = true;
-														$scope.inProgress = false;
-
+														
 													});
+								}
+								
+							
+								function update() {
+
+									$scope.complete = false;
+									
+									$scope.repeatId = setInterval(updateInternal, 3000);
+								
+								
+								}
+								
+								function updateInternal () {
+							
+									$http.get("/api/v1/populateRepositories/" + $scope.id + "/status").then(
+											function(response) {
+												$scope.howManyFetched = response.data.howManyFetched === -1 ? 0 : response.data.howManyFetched;
+												$scope.howManyToFetch = response.data.howManyToFetch;
+												$scope.complete = response.data.isComplete;
+																						
+												
+												console.log("checking again....")
+												if($scope.complete){
+													clearInterval($scope.repeatId);
+													$scope.inProgress = false;
+													
+													$scope.status = response.data.status;
+													$scope.duplicates = response.data.duplicates;
+													$scope.unableToCheckDuplicates = response.data.unableToCheckDuplicates;
+													
+													if ($scope.status == "FAILURE"){
+														$scope.failed = true;
+														$scope.errorMessage = response.data.completionMessage;
+													}
+													
+													else {
+														$scope.successMessage = "Successfully fetched data for "
+																+ $scope.howManyFetched
+																+ (1 === $scope.howManyFetched ? " repository"
+																		: " repositories");
+													}
+													
+													$scope.unableToCheckDuplicatesFlag = Object.keys($scope.unableToCheckDuplicates).length != 0;  
+													
+												}
+												
+											},
+											function(error) {
+											
+											}
+									);
+								
 								}
 
 							});
@@ -111,12 +157,12 @@
 
 			<div class="container">
 
-				<h1>Populate database from Github API</h1>
+				<h1>Populate database from GitHub API</h1>
 
 				<div class="top15">
 
-					Enter the Github organisation or user to populate data for.
-					Application <i>must</i> be setup with a Github token that has
+					Enter the GitHub organisation or user to populate data for.
+					Application <i>must</i> be setup with a GitHub token that has
 					access to this organisation or user. <br /> <input type="text"
 						ng-model="submit.organisation" required="true" />
 
@@ -175,48 +221,65 @@
 				</div>
 
 
-
 				<div id="response" class="top15">
-
-					<div class="alert alert-success" ng-if="success">{{successMessage}}</div>
-
-
 					<div class="alert alert-warning" ng-if="inProgress">
-						{{progressMessage}}</div>
+						{{progressMessage}}
+						
+						<div class="progress">
+							<span id="percentage">({{getPercentage()}}%)</span>
+							<div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="{{getPercentage()}}" aria-valuemin="0" 
+	  							aria-valuemax="100" ng-style="{width : ( getPercentage() + '%' ) }">
+    			
+							</div>
+						</div>
+						
+					</div>
 
-					<div class="alert alert-warning" ng-if="0 != warning.length">
+					<div ng-if="complete">
+						<div class="alert alert-success" ng-if="status != 'FAILURE'">{{successMessage}}</div>
+						
+						<div class="alert alert-warning" ng-if="0 != duplicates.length">
 
 
-						Duplicate users were found on the following repositories:
-						<div ng-repeat="repo in warning">{{repo}}&nbsp;<a href="remapUsers.html?org={{submit.organisation}}&amp;repo={{repo}}" target="_blank">(fix <i
+							Duplicate users were found on the following repositories:
+							<div ng-repeat="repo in duplicates">{{repo}}&nbsp;<a href="remapUsers.html?org={{submit.organisation}}&amp;repo={{repo}}" target="_blank">(fix <i
 										class="fas fa-external-link-square-alt"></i>)</a></div>
 
 
-					</div>
-					<div ng-if="unableToCheckDuplicatesFlag">
-
-						<div class="alert alert-warning" ng-if="submit.checkDuplicates">
-
-							Unable to check for duplicate user on one or more repositories:
-
-							<div
-								ng-repeat="(repo, message) in unableToCheckDuplicates track by $index">
-
-								<div>
-									<tt>{{repo}}</tt>
-									<i> {{message}}</i>
-								</div>
-								<br />
-							</div>
-
 						</div>
+						
+						<div ng-if="unableToCheckDuplicatesFlag">
+
+							<div class="alert alert-warning" ng-if="submit.checkDuplicates">
+	
+								Unable to check for duplicate user on one or more repositories:
+	
+								<div
+									ng-repeat="(repo, message) in unableToCheckDuplicates track by $index">
+	
+									<div>
+										<tt>{{repo}}</tt>
+										<i> {{message}}</i>
+									</div>
+									<br />
+								</div>
+	
+							</div>
+						</div>
+					
+						<div class="alert alert-danger" ng-if="failed">
+							{{errorMessage}}
+	
+						</div>
+					
+					
 					</div>
 
 
-					<div class="alert alert-danger" ng-if="failed">
-						<br /> {{errorMessage}}
 
-					</div>
+
+
+
 				</div>
 
 				<div class="top15">

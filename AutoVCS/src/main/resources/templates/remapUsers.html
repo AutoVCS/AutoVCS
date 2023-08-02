@@ -98,12 +98,15 @@
 								
 
 								$scope.submitUpdates = function() {
-									console.log($scope);
+									//console.log($scope);
+									$scope.success = false;
 
 									$http.post("/api/v1/users/remap",
 											$scope.newUsers).then(
 											function(response) {
-
+												$scope.resp = response.data;
+												$scope.success = true;
+												$scope.loadRepo();
 											}, function(error) {
 
 											});
@@ -171,6 +174,11 @@
 
 					</div>
 
+				</div>
+				
+				<div class="row top15">
+				<div class="alert alert-success" ng-if="success" style="width:100%">Successfully remapped {{resp.NUM_COMMITS}} commits from {{resp.NUM_USERS}} users.</div>
+				
 				</div>
 
 

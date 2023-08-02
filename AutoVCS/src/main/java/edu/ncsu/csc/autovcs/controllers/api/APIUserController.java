@@ -1,9 +1,11 @@
 package edu.ncsu.csc.autovcs.controllers.api;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,6 +43,14 @@ public class APIUserController extends APIController {
 
     @PostMapping ( BASE_PATH + "users/remap" )
     public ResponseEntity remapUsers ( @RequestBody final Map<Long, Long> usersMap ) {
+    	
+    	Map<String, Integer> resp = new HashMap<String, Integer>();
+    	
+    	resp.put("NUM_USERS", usersMap.size());
+    	
+    	// feels kinda silly vs just an `Integer`, but req'd:
+    	// https://docs.oracle.com/javase/specs/jls/se10/html/jls-15.html#jls-15.27.2
+    	AtomicInteger commits = new AtomicInteger();
 
         usersMap.forEach( ( oldUserId, newUserId ) -> {
             final GitUser oldUser = userService.findById( oldUserId );
@@ -51,6 +61,8 @@ public class APIUserController extends APIController {
             final List<GHCommit> commitsByOldUser = commitService.findByUser( oldUser );
             commitsByOldUser.forEach( commit -> commit.setAuthor( newUser ) );
 
+            commits.addAndGet(commitsByOldUser.size());
+            
             commitService.saveAll( commitsByOldUser );
 
             // remap PR information
@@ -75,9 +87,12 @@ public class APIUserController extends APIController {
             prService.saveAll( closedByOldUser );
 
             commentService.saveAll( commentsByOldUser );
+            
         } );
+        
+        resp.put("NUM_COMMITS", commits.get());
 
-        return new ResponseEntity( HttpStatus.OK );
+        return new ResponseEntity<Map>( resp, HttpStatus.OK );
     }
 
     @PostMapping ( BASE_PATH + "users" )

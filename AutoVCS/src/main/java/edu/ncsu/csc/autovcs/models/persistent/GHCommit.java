@@ -31,10 +31,10 @@ public class GHCommit extends DomainObject {
     @GeneratedValue ( strategy = GenerationType.IDENTITY )
     private Long              id;
 
-    @ManyToOne ( cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH } )
+    @ManyToOne ( cascade = { CascadeType.PERSIST, CascadeType.REFRESH } )
     private GitUser           author;
 
-    @ManyToOne ( cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH } )
+    @ManyToOne ( cascade = { CascadeType.PERSIST, CascadeType.REFRESH } )
     private GitUser           committer;
 
     @NotNull

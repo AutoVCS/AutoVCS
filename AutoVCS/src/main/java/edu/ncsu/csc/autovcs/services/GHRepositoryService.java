@@ -57,11 +57,8 @@ public class GHRepositoryService extends Service<GHRepository, Long> {
     @Transactional
     public void loadCommits ( final GHRepository repository ) {
 
-        final Set<GHCommit> existingCommits = repository.getCommits();
 
-        if ( null == existingCommits || existingCommits.isEmpty() ) {
-            repository.setCommits( new HashSet<GHCommit>( commitService.findByRepository( repository ) ) );
-        }
+          repository.setCommits( new HashSet<GHCommit>( commitService.findByRepository( repository ) ) );
 
     }
 
